@@ -1,0 +1,11 @@
+{
+  "deployment": {
+    "private_key": "0x02c398465e58e5ca974035d5d145faf0980e8320e126ee2b8e4b18ac7a2b5ef6",
+    "public_key": "0x01BE47EbD8FCbCd4c1fB472DFd452530D86ce18b0381233836a7994154D88617",
+    "address": "0x0575AC38cc6c2a9b40fef5e1B1D441A3f138493Ed7127BaAaF5F12748D567C61",
+    "salt": "0x0",
+    "class_hash": "0x5b4b537eaa2399e3aa99c4e2e0208ebd6c71bc1467938cd52c798c601e43564",
+    "deployed": true,
+    "type": "OpenZeppelin"
+  }
+} 
