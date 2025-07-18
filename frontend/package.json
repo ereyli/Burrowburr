@@ -2,6 +2,10 @@
   "name": "burrow-dapp",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "dependencies": {
     "get-starknet-core": "^4.0.0",
     "react": "^18.2.0",
@@ -28,6 +32,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "overrides": {
+    "starknet": "^6.24.1"
   },
   "devDependencies": {
     "@craco/craco": "^7.1.0",
