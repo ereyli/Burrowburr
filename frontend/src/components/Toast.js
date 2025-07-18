@@ -34,7 +34,7 @@ const Toast = ({ message, type = 'success', duration = 5000, onClose }) => {
       case 'info':
         return 'ℹ️';
       case 'beaver':
-        return '🦫';
+        return '⛏️';
       default:
         return '✅';
     }

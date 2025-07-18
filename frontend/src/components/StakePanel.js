@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GAME_CONFIG, BEAVER_IMAGES, BEAVER_DESCRIPTIONS, formatNumber } from '../utils/constants';
+import { GAME_CONFIG, BeaverImage, BEAVER_DESCRIPTIONS, formatNumber } from '../utils/constants';
 
 const StakePanel = ({ hasStaked, beaverInfo, onStake }) => {
   const [selectedBeaver, setSelectedBeaver] = useState('NOOB');
@@ -10,9 +10,10 @@ const StakePanel = ({ hasStaked, beaverInfo, onStake }) => {
 
   return (
     <div className="bg-burrow-dark bg-opacity-80 rounded-2xl p-6 border-2 border-burrow-brown">
-      <h2 className="text-xl font-bold text-burrow-orange mb-4 font-comic">
-        🦫 Beaver Station
-      </h2>
+              <h2 className="text-xl font-bold text-burrow-orange mb-4 font-comic flex items-center space-x-2">
+          <img src="/beaver_logo.png" alt="Beaver" className="w-6 h-6" />
+          <span>Beaver Station</span>
+        </h2>
 
       {!hasStaked ? (
         <div className="space-y-6">
@@ -23,13 +24,19 @@ const StakePanel = ({ hasStaked, beaverInfo, onStake }) => {
                 key={key}
                 className={`cursor-pointer transition-all duration-200 rounded-xl p-4 border-2 ${
                   selectedBeaver === key
-                    ? 'border-burrow-orange bg-burrow-brown bg-opacity-30'
+                    ? 'border-burrow-orange bg-burrow-brown bg-opacity-30 burrow-glow'
                     : 'border-burrow-brown bg-burrow-brown bg-opacity-10 hover:bg-opacity-20'
                 }`}
                 onClick={() => setSelectedBeaver(key)}
               >
                 <div className="text-center">
-                  <div className="text-4xl mb-2">{BEAVER_IMAGES[key]}</div>
+                  <div className="mb-2">
+                    <BeaverImage 
+                      type={key} 
+                      size="w-16 h-16" 
+                      isActive={selectedBeaver === key}
+                    />
+                  </div>
                   <h3 className="text-lg font-bold text-white mb-1">{beaver.name}</h3>
                   <p className="text-burrow-blue-light text-sm mb-3">
                     {BEAVER_DESCRIPTIONS[key]}
@@ -51,40 +58,36 @@ const StakePanel = ({ hasStaked, beaverInfo, onStake }) => {
           <div className="text-center">
             <button
               onClick={handleStake}
-              className="game-button text-white font-bold py-4 px-8 rounded-xl text-lg"
+              className="game-button text-white font-bold py-3 px-8 rounded-lg text-lg hover:scale-105 transition-transform"
             >
-              Buy {GAME_CONFIG.BEAVER_TYPES[selectedBeaver].name} Beaver 
-              ({GAME_CONFIG.BEAVER_TYPES[selectedBeaver].stakeCost} $STRK)
+              ⛏️ Stake {GAME_CONFIG.BEAVER_TYPES[selectedBeaver].name} Beaver
             </button>
           </div>
         </div>
       ) : (
-        <div className="beaver-card rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="text-4xl">{BEAVER_IMAGES[beaverInfo.type.toUpperCase()]}</div>
-              <div>
-                <h3 className="text-xl font-bold text-white">{beaverInfo.type} Beaver</h3>
-                <p className="text-burrow-blue-light">Level {beaverInfo.level}</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-burrow-orange font-bold text-lg">
-                {formatNumber(beaverInfo.hourlyRate)} $BURR/hour
-              </div>
-              <div className="text-burrow-blue-light text-sm">
-                Since: {new Date(beaverInfo.lastClaim).toLocaleTimeString()}
-              </div>
+        <div className="text-center space-y-4">
+          <div className="flex items-center justify-center space-x-4 bg-burrow-brown bg-opacity-10 rounded-xl p-6 burrow-glow">
+            <BeaverImage 
+              type={beaverInfo.type} 
+              size="w-20 h-20" 
+              isActive={true}
+              showMining={true}
+            />
+            <div>
+              <h3 className="text-xl font-bold text-white">
+                {GAME_CONFIG.BEAVER_TYPES[beaverInfo.type.toUpperCase()]?.name || 'Unknown'} Beaver
+              </h3>
+              <p className="text-burrow-blue-light">Level {beaverInfo.level || 1}</p>
+              <p className="text-green-400 text-sm font-medium">🔥 ACTIVELY MINING 🔥</p>
             </div>
           </div>
           
-          <div className="bg-burrow-dark bg-opacity-50 rounded-lg p-4">
-            <div className="text-center">
-              <div className="text-burrow-blue-light text-sm mb-1">Mining Status</div>
-              <div className="text-green-400 font-bold text-lg">
-                🔥 ACTIVELY MINING 🔥
-              </div>
-            </div>
+          <div className="text-burrow-orange font-bold text-lg coin-sparkle">
+            Currently Mining: {formatNumber(beaverInfo.hourlyRate || 0)} $BURR/hour
+          </div>
+          
+          <div className="text-green-400 text-sm">
+            Your beaver is working hard to mine $BURR tokens! ⛏️
           </div>
         </div>
       )}

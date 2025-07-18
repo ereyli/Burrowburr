@@ -1,5 +1,49 @@
-target
-.snfoundry_cache/
-snfoundry_trace/
-coverage/
-profile/
+# Build artifacts
+target/
+artifacts/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# Sensitive files - NEVER COMMIT THESE
+.env
+.env.local
+.env.*.local
+*account*.json
+*keystore*.json
+*private*
+*secret*
+*.key
+*.pem
+*mnemonic*
+*seed*
+
+# Starknet account files
+.starknet_accounts/
+accounts.json
+keystore.json
+
+# Backup files that might contain sensitive data
+*.backup
+*.bak
+Scarb.toml.backup
+
+# Temporary verification directories
+temp_verify/
+burrowgame_clean/
+
+# Node modules (if any)
+node_modules/

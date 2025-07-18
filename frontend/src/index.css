@@ -23,11 +23,49 @@ body {
   min-height: 100vh;
 }
 
+/* Custom Beaver Animations */
+@keyframes beaver-dig {
+  0%, 100% { transform: rotate(-5deg) translateY(0px); }
+  50% { transform: rotate(5deg) translateY(-3px); }
+}
+
+@keyframes beaver-tail-wag {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(10deg); }
+  75% { transform: rotate(-10deg); }
+}
+
+@keyframes coin-sparkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+@keyframes burrow-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(255, 140, 0, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(255, 140, 0, 0.6); }
+}
+
+.beaver-digging {
+  animation: beaver-dig 1.5s ease-in-out infinite;
+}
+
+.beaver-tail-wagging {
+  animation: beaver-tail-wag 2s ease-in-out infinite;
+}
+
+.coin-sparkle {
+  animation: coin-sparkle 2s ease-in-out infinite;
+}
+
+.burrow-glow {
+  animation: burrow-glow 3s ease-in-out infinite;
+}
+
 /* Layout */
 .container {
-  max-width: 1200px;
+  max-width: 1200px; /* Back to original size */
   margin: 0 auto;
-  padding: 20px;
+  padding: 20px; /* Back to original size */
 }
 
 .header {
@@ -43,9 +81,9 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 1200px;
+  max-width: 1200px; /* Back to original size */
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 20px; /* Back to original size */
 }
 
 .logo {
@@ -55,21 +93,38 @@ body {
 }
 
 .logo h1 {
-  font-size: 2.5rem;
+  font-size: 2.5rem; /* Back to original size */
   font-weight: bold;
   color: var(--accent-orange);
   font-family: 'Comic Sans MS', cursive;
 }
 
-/* Buttons */
+/* Enhanced Buttons with Beaver Theming */
 .btn {
-  padding: 12px 24px;
+  padding: 12px 24px; /* Back to original size */
   border: none;
-  border-radius: 12px;
+  border-radius: 12px; /* Back to original size */
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 16px;
+  font-size: 16px; /* Back to original size */
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn:hover::before {
+  left: 100%;
 }
 
 .btn-primary {
@@ -113,22 +168,161 @@ body {
   background: #4B5563;
 }
 
+/* Game UI Elements */
+.game-button {
+  background: linear-gradient(135deg, var(--accent-orange), #ff6b35);
+  border: 2px solid var(--primary-brown);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.game-button:hover {
+  background: linear-gradient(135deg, #ff6b35, var(--accent-orange));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 140, 0, 0.4);
+}
+
+.game-button:active {
+  transform: translateY(0);
+}
+
+/* Beaver Card Styling */
+.beaver-card {
+  background: rgba(139, 69, 19, 0.1);
+  border: 2px solid var(--primary-brown);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.beaver-card:hover {
+  border-color: var(--accent-orange);
+  box-shadow: 0 8px 32px rgba(255, 140, 0, 0.2);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--primary-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-brown);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-orange);
+}
+
+/* Loading States */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--accent-orange);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Toast Enhancements */
+.toast {
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--primary-brown);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 15px;
+  }
+  
+  .header-content {
+    padding: 0 15px;
+  }
+  
+  .logo h1 {
+    font-size: 2rem;
+  }
+  
+  .btn {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+}
+
+/* Dark theme enhancements */
+.bg-burrow-dark {
+  background-color: #1a1a1a;
+}
+
+.border-burrow-brown {
+  border-color: #8B4513;
+}
+
+.text-burrow-orange {
+  color: #FF8C00;
+}
+
+.text-burrow-blue-light {
+  color: #87CEEB;
+}
+
+.bg-burrow-brown {
+  background-color: #8B4513;
+}
+
+.font-comic {
+  font-family: 'Comic Sans MS', cursive;
+}
+
+/* Mining animation for active beavers */
+.mining-active {
+  animation: beaver-dig 2s ease-in-out infinite;
+}
+
+/* Particle effect for rewards */
+.reward-particle {
+  position: absolute;
+  pointer-events: none;
+  font-size: 20px;
+  animation: particle-float 2s ease-out forwards;
+}
+
+@keyframes particle-float {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.5);
+  }
+}
+
 /* Cards */
 .card {
   background: rgba(26, 26, 26, 0.9);
   border: 2px solid var(--border-color);
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 20px;
+  border-radius: 16px; /* Back to original size */
+  padding: 24px; /* Back to original size */
+  margin-bottom: 20px; /* Back to original size */
 }
 
 .card h2 {
   color: var(--accent-orange);
-  margin-bottom: 20px;
-  font-size: 1.5rem;
+  margin-bottom: 16px; /* Reduced from 20px */
+  font-size: 1.3rem; /* Reduced from 1.5rem */
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px; /* Reduced from 10px */
 }
 
 /* Grid System */
@@ -434,4 +628,112 @@ body {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
+}
+
+/* SIMPLE MODAL POSITIONING - NO BODY TRANSFORM */
+
+/* Remove backdrop/overlay */
+html body div[style*="background"][style*="rgba"],
+html body div[style*="backdrop"],
+html body [class*="overlay"],
+div[style*="position: fixed"][style*="inset: 0"],
+div[style*="position: fixed"][style*="z-index: 50"] {
+  background: none !important;
+  backdrop-filter: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  display: none !important;
+}
+
+/* Modal positioning */
+html body div[style*="position: fixed"],
+html body div[role="dialog"],
+html body div[data-testid*="modal"],
+html body [class*="modal"],
+body > div[style*="z-index"] {
+  position: fixed !important;
+  top: 100px !important; /* Simple top positioning */
+  left: 50% !important;
+  transform: translateX(-50%) !important; /* Simple horizontal centering */
+  z-index: 999999 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: transparent !important;
+}
+
+/* Target modal content */
+div[style*="z-index: 50"] > div,
+div[role="dialog"] > div:first-child,
+[data-testid*="modal"] > div:first-child {
+  position: relative !important;
+  transform: none !important;
+  zoom: 1 !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  /* Clean modal appearance */
+  background: rgba(0, 0, 0, 0.9) !important;
+  border-radius: 12px !important;
+  padding: 24px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Fallback positioning */
+div[style*="z-index: 50"]:not([style*="inset: 0"]),
+div[style*="z-index: 100"]:not([style*="inset: 0"]),
+div[style*="z-index: 999"]:not([style*="inset: 0"]),
+div[style*="z-index: 1000"]:not([style*="inset: 0"]) {
+  position: fixed !important;
+  top: 80px !important;
+  left: 50% !important;
+  margin-left: -250px !important;
+  width: 500px !important;
+  transform: none !important;
+  z-index: 999999 !important;
+  background: transparent !important;
+  zoom: 1 !important;
+}
+
+/* Any fixed element that looks like a modal */
+div[style*="pointer-events: auto"][style*="position: fixed"],
+div[style*="will-change"][style*="position: fixed"] {
+  top: 80px !important;
+  left: 50% !important;
+  margin-left: -250px !important;
+  width: 500px !important;
+  transform: none !important;
+  z-index: 999999 !important;
+  background: transparent !important;
+  zoom: 1 !important;
+}
+
+/* Ensure no page effects */
+body {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html, body, #root {
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Footer Social Cards Hover Effects */
+.social-card-x:hover {
+  transform: translateY(-5px) scale(1.02) !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7) !important;
+  border: 2px solid #FFD700 !important;
+  background: linear-gradient(135deg, #1a1a1a 0%, #333333 100%) !important;
+}
+
+.social-card-dex:hover {
+  transform: translateY(-5px) scale(1.02) !important;
+  box-shadow: 0 15px 35px rgba(255, 215, 0, 0.5) !important;
+  border: 2px solid #1DA1F2 !important;
+}
+
+.contract-address:hover {
+  background: rgba(255, 180, 71, 0.3) !important;
+  transform: scale(1.02) !important;
 }

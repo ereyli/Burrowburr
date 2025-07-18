@@ -98,7 +98,9 @@ const UpgradePanel = ({ hasStaked, beaverInfo, upgradeInfo, onUpgrade }) => {
           </>
         ) : (
           <div className="bg-yellow-500 bg-opacity-20 rounded-xl p-6 text-center">
-            <div className="text-2xl mb-2">🏆</div>
+                            <div className="text-2xl mb-2">
+                  <img src="/beaver_logo.png" alt="Beaver" className="w-8 h-8 mx-auto" />
+                </div>
             <div className="text-yellow-400 font-bold text-lg">MAX LEVEL ACHIEVED!</div>
             <div className="text-burrow-blue-light text-sm mt-2">
               Your beaver is operating at maximum efficiency!

@@ -259,133 +259,182 @@ function formatNumber(num) {
 // Connect wallet
 export async function connectWallet() {
     try {
-        console.log("🦫 Starting wallet connection...");
+        console.log("Starting wallet connection...");
         
         // Check if wallet extensions are available
         if (!window.starknet_argentX && !window.starknet_braavos && !window.starknet) {
             throw new Error('No Starknet wallets found. Please install ArgentX or Braavos wallet extension.');
         }
 
-        // Try direct wallet connection first (more reliable)
-        let wallet = null;
-        let address = null;
+        // Method 1: Use Starknetkit modal first (better UX)
+        try {
+            console.log("Opening wallet selection modal...");
+            
+            const connection = await connect({
+                webWalletUrl: "https://web.argent.xyz",
+                dappName: "BurrowGame",
+                modalMode: "alwaysAsk", // Always show modal for wallet selection
+                modalTheme: "dark",
+                include: ["argentX", "braavos"],
+                exclude: [],
+                order: ["argentX", "braavos"]
+            });
 
-        // Method 1: Try ArgentX directly
+            if (connection && connection.isConnected && connection.account?.address) {
+                currentConnection = connection;
+                console.log("✅ Successfully connected with Starknetkit:", connection.account.address);
+                
+                return {
+                    wallet: connection.wallet,
+                    account: connection.account,
+                    address: connection.account.address,
+                    isConnected: true
+                };
+            }
+        } catch (error) {
+            console.log("❌ Starknetkit modal failed or cancelled:", error.message);
+            
+            // Check for specific wallet lock errors
+            if (error.message && (
+                error.message.includes('KeyRing is locked') ||
+                error.message.includes('wallet is locked') ||
+                error.message.includes('chrome-extension')
+            )) {
+                return { 
+                    isConnected: false, 
+                    error: 'Wallet is locked! Please unlock your ArgentX or Braavos wallet and try again.' 
+                };
+            }
+            
+            // If modal was cancelled or failed, try direct connections silently
+        }
+
+        // Method 2: Try ArgentX directly (fallback, silent)
         if (window.starknet_argentX) {
             try {
-                console.log("Trying to connect with ArgentX...");
-                wallet = window.starknet_argentX;
+                console.log("Trying direct ArgentX connection...");
+                const wallet = window.starknet_argentX;
                 
-                if (wallet.isLocked) {
-                    throw new Error('ArgentX wallet is locked. Please unlock your wallet.');
-                }
-                
-                await wallet.enable();
-                
-                if (wallet.isConnected && wallet.account?.address) {
-                    address = wallet.account.address;
-                    console.log("✅ Successfully connected with ArgentX:", address);
+                // Skip silently if locked
+                if (!wallet.isLocked) {
+                    await wallet.enable();
                     
-                    // Set as current connection
-                    currentConnection = {
-                        account: wallet.account,
-                        isConnected: true
-                    };
-                    
-                    return {
-                        wallet: wallet,
-                        account: wallet.account,
-                        address: address,
-                        isConnected: true
-                    };
+                    if (wallet.isConnected && wallet.account?.address) {
+                        console.log("✅ Successfully connected with ArgentX directly:", wallet.account.address);
+                        
+                        currentConnection = {
+                            account: wallet.account,
+                            isConnected: true
+                        };
+                        
+                        return {
+                            wallet: wallet,
+                            account: wallet.account,
+                            address: wallet.account.address,
+                            isConnected: true
+                        };
+                    }
                 }
             } catch (error) {
-                console.log("❌ ArgentX connection failed:", error.message);
+                console.log("❌ Direct ArgentX connection failed:", error.message);
+                
+                // Check for wallet locked errors
+                if (error.message && (
+                    error.message.includes('KeyRing is locked') ||
+                    error.message.includes('wallet is locked') ||
+                    error.message.includes('chrome-extension')
+                )) {
+                    return { 
+                        isConnected: false, 
+                        error: 'ArgentX wallet is locked! Please unlock your wallet and try again.' 
+                    };
+                }
             }
         }
 
-        // Method 2: Try Braavos directly
-        if (window.starknet_braavos && !wallet) {
+        // Method 3: Try Braavos directly (fallback, silent)
+        if (window.starknet_braavos) {
             try {
-                console.log("Trying to connect with Braavos...");
-                wallet = window.starknet_braavos;
+                console.log("Trying direct Braavos connection...");
+                const wallet = window.starknet_braavos;
                 
-                if (wallet.isLocked) {
-                    throw new Error('Braavos wallet is locked. Please unlock your wallet.');
-                }
-                
-                await wallet.enable();
-                
-                if (wallet.isConnected && wallet.account?.address) {
-                    address = wallet.account.address;
-                    console.log("✅ Successfully connected with Braavos:", address);
+                // Skip silently if locked  
+                if (!wallet.isLocked) {
+                    await wallet.enable();
                     
-                    // Set as current connection
-                    currentConnection = {
-                        account: wallet.account,
-                        isConnected: true
-                    };
-                    
-                    return {
-                        wallet: wallet,
-                        account: wallet.account,
-                        address: address,
-                        isConnected: true
-                    };
+                    if (wallet.isConnected && wallet.account?.address) {
+                        console.log("✅ Successfully connected with Braavos directly:", wallet.account.address);
+                        
+                        currentConnection = {
+                            account: wallet.account,
+                            isConnected: true
+                        };
+                        
+                        return {
+                            wallet: wallet,
+                            account: wallet.account,
+                            address: wallet.account.address,
+                            isConnected: true
+                        };
+                    }
                 }
             } catch (error) {
-                console.log("❌ Braavos connection failed:", error.message);
+                console.log("❌ Direct Braavos connection failed:", error.message);
+                
+                // Check for wallet locked errors
+                if (error.message && (
+                    error.message.includes('KeyRing is locked') ||
+                    error.message.includes('wallet is locked') ||
+                    error.message.includes('chrome-extension')
+                )) {
+                    return { 
+                        isConnected: false, 
+                        error: 'Braavos wallet is locked! Please unlock your wallet and try again.' 
+                    };
+                }
             }
         }
 
-        // Method 3: Try starknetkit as fallback
-        if (!wallet) {
-            try {
-                console.log("Trying to connect with Starknetkit...");
-                
-                const connection = await connect({
-                    webWalletUrl: "https://web.argent.xyz",
-                    dappName: "BurrowGame",
-                    modalMode: "canAsk",
-                    modalTheme: "dark",
-                    include: ["argentX", "braavos"],
-                    exclude: [],
-                    order: ["argentX", "braavos"]
-                });
-
-                if (connection && connection.isConnected && connection.account?.address) {
-                    currentConnection = connection;
-                    console.log("✅ Successfully connected with Starknetkit:", connection.account.address);
-                    
-                    return {
-                        wallet: connection.wallet,
-                        account: connection.account,
-                        address: connection.account.address,
-                        isConnected: true
-                    };
-                }
-            } catch (error) {
-                console.log("❌ Starknetkit connection failed:", error.message);
-            }
+        // Check if wallets exist
+        let hasWallets = false;
+        
+        if (window.starknet_argentX) {
+            hasWallets = true;
         }
-
-        // If all methods failed
-        throw new Error('Wallet connection failed. Please make sure your wallet is unlocked and try again.');
+        
+        if (window.starknet_braavos) {
+            hasWallets = true;
+        }
+        
+        // Only throw error if no wallets are found
+        if (!hasWallets) {
+            throw new Error('No Starknet wallets found. Please install ArgentX or Braavos wallet extension.');
+        } else {
+            // If wallets exist but connection failed (maybe locked), return silent failure
+            console.log("⚠️ No wallets could be connected (possibly locked or user cancelled)");
+            return { 
+                isConnected: false, 
+                error: null // Silent failure - no error message to user
+            };
+        }
 
     } catch (error) {
         console.error("🚨 Wallet connection error:", error);
         
-        // Provide specific error messages
+        // Don't propagate uncaught errors - return controlled error response
         let errorMessage = error.message;
         
-        if (error.message.includes('KeyRing is locked')) {
+        if (error.message.includes('KeyRing is locked') || error.message.includes('locked')) {
             errorMessage = 'Wallet is locked! Please unlock your ArgentX or Braavos wallet and try again.';
-        } else if (error.message.includes('User rejected')) {
+        } else if (error.message.includes('User rejected') || error.message.includes('rejected')) {
             errorMessage = 'Connection rejected. Please approve the connection in your wallet.';
-        } else if (error.message.includes('not found')) {
+        } else if (error.message.includes('not found') || error.message.includes('install')) {
             errorMessage = 'Wallet not found. Please install ArgentX or Braavos extension.';
+        } else if (error.message.includes('Failed to connect to MetaMask')) {
+            errorMessage = 'Wallet connection failed. Please make sure your wallet is unlocked and try again.';
         }
         
+        // Return error response instead of throwing
         return { 
             isConnected: false, 
             error: errorMessage 
@@ -475,7 +524,7 @@ export async function fetchPlayerInfo(address) {
         }
         
         console.log("📝 Using formatted address:", formattedAddress);
-        console.log("🎮 Contract address:", GAME_CONTRACT_ADDRESS);
+        console.log("Contract address:", GAME_CONTRACT_ADDRESS);
         
         // Manual contract call to test
         console.log('🔧 Testing manual call with provider...');
@@ -515,7 +564,7 @@ export async function fetchPlayerInfo(address) {
         // Get total pending rewards once for the user
         const totalPendingRewards = await gameContract.calculate_pending_rewards(formattedAddress);
         const totalPendingBigInt = safeBalanceConvert(totalPendingRewards);
-        console.log(`💰 Total pending rewards for user:`, totalPendingBigInt.toString());
+        console.log(`Total pending rewards for user:`, totalPendingBigInt.toString());
         
         // Fetch details for each beaver individually
         const beavers = [];
@@ -523,7 +572,7 @@ export async function fetchPlayerInfo(address) {
         
         for (const beaverId of beaverIds) {
             try {
-                console.log(`🦫 Fetching beaver ID: ${beaverId}`);
+                console.log(`Fetching beaver ID: ${beaverId}`);
                 
                 // Get beaver details - pass address and beaver_id
                 const beaverDetails = await gameContract.get_beaver(formattedAddress, beaverId);
@@ -566,8 +615,8 @@ export async function fetchPlayerInfo(address) {
             }
         }
         
-        console.log("🎉 Final beavers array:", beavers);
-        console.log("💎 Total rewards:", totalPendingBigInt.toString());
+        console.log("Final beavers array:", beavers);
+console.log("Total rewards:", totalPendingBigInt.toString());
         
         return { beavers, totalRewards: formatBalance(totalPendingBigInt, 18) };
         
@@ -617,9 +666,9 @@ export async function fetchPendingRewards(address) {
         
         const pendingBigInt = pendingRewards;
         
-        console.log(`💰 Contract pending rewards (raw):`, pendingRewards);
-        console.log(`💰 Contract pending rewards (converted):`, pendingBigInt.toString());
-        console.log(`💰 Contract pending rewards (hex):`, pendingRewards.toString());
+        console.log(`Contract pending rewards (raw):`, pendingRewards);
+console.log(`Contract pending rewards (converted):`, pendingBigInt.toString());
+console.log(`Contract pending rewards (hex):`, pendingRewards.toString());
         
         // Also get user info for debugging  
         try {
@@ -628,7 +677,7 @@ export async function fetchPendingRewards(address) {
                 entrypoint: 'get_user_beavers',
                 calldata: [formattedAddress]
             });
-            console.log(`🦫 User beavers from manual call:`, userBeaversRaw);
+            console.log(`User beavers from manual call:`, userBeaversRaw);
             
             // Check user's last claim time 
             const userLastClaimRaw = await provider.callContract({
@@ -651,14 +700,14 @@ export async function fetchPendingRewards(address) {
                     entrypoint: 'get_beaver',
                     calldata: [formattedAddress, '0x1'] // Beaver ID 1
                 });
-                console.log(`🦫 Beaver 1 raw details:`, beaverDetailsRaw);
+                console.log(`Beaver 1 raw details:`, beaverDetailsRaw);
                 
                 const beaver2DetailsRaw = await provider.callContract({
                     contractAddress: GAME_CONTRACT_ADDRESS,
                     entrypoint: 'get_beaver',
                     calldata: [formattedAddress, '0x2'] // Beaver ID 2
                 });
-                console.log(`🦫 Beaver 2 raw details:`, beaver2DetailsRaw);
+                console.log(`Beaver 2 raw details:`, beaver2DetailsRaw);
             } catch (beaverError) {
                 console.log("Failed to get beaver details:", beaverError);
             }
@@ -675,7 +724,7 @@ export async function fetchPendingRewards(address) {
         const fractionalNumber = Number(remainder) / Math.pow(10, 18);
         const totalNumber = wholeNumber + fractionalNumber;
         
-        console.log(`💰 Contract pending rewards (raw number):`, totalNumber);
+        console.log(`Contract pending rewards (raw number):`, totalNumber);
         
         return totalNumber.toString(); // Return as string but full precision
         
@@ -735,7 +784,7 @@ export async function stakeBeaver(beaverType, strkCost, strkAddress) {
 // Claim rewards (withdrawal)
 export async function claimRewards() {
     try {
-        console.log("💰 Starting claim process...");
+        console.log("Starting claim process...");
         
         const connection = getConnection();
         if (!connection || !connection.isConnected) {
@@ -745,7 +794,7 @@ export async function claimRewards() {
         // Create contract instance with account
         const gameContract = new Contract(GAME_ABI, GAME_CONTRACT_ADDRESS, connection.account);
         
-        console.log("🎯 Calling claim function...");
+        console.log("Calling claim function...");
         const result = await gameContract.claim();
         
         console.log("📋 Claim transaction result:", result.transaction_hash);

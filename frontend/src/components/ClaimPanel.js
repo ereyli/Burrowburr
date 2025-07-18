@@ -5,8 +5,9 @@ const ClaimPanel = ({ hasStaked, accumulated, onClaim }) => {
   if (!hasStaked) {
     return (
       <div className="bg-burrow-dark bg-opacity-80 rounded-2xl p-6 border-2 border-burrow-blue opacity-50">
-        <h2 className="text-xl font-bold text-burrow-orange mb-4 font-comic">
-          💰 Claim Rewards
+        <h2 className="text-xl font-bold text-burrow-orange mb-4 font-comic flex items-center space-x-2">
+          <img src="/beaver_logo.png" alt="Beaver" className="w-6 h-6" />
+          <span>Claim Rewards</span>
         </h2>
         <div className="text-center text-burrow-blue-light">
           Stake a beaver to start earning rewards!
@@ -19,8 +20,9 @@ const ClaimPanel = ({ hasStaked, accumulated, onClaim }) => {
 
   return (
     <div className="bg-burrow-dark bg-opacity-80 rounded-2xl p-6 border-2 border-burrow-blue">
-      <h2 className="text-xl font-bold text-burrow-orange mb-4 font-comic">
-        💰 Claim Rewards
+      <h2 className="text-xl font-bold text-burrow-orange mb-4 font-comic flex items-center space-x-2">
+        <img src="/beaver_logo.png" alt="Beaver" className="w-6 h-6" />
+        <span>Claim Rewards</span>
       </h2>
 
       <div className="space-y-4">

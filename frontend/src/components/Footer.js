@@ -41,6 +41,7 @@ const Footer = () => {
                 <span className="text-lg font-semibold group-hover:text-burrow-orange transition-colors">Follow on X</span>
               </a>
               <a
+                id="dexscreener-section"
                 href={SOCIAL_LINKS.dexscreener}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -76,14 +77,16 @@ const Footer = () => {
           {/* Game Info */}
           <div className="text-center md:text-right">
             <h3 className="text-lg font-bold text-burrow-orange mb-3 font-comic">
-              🎮 Game Info
+              Game Info
             </h3>
             <div className="space-y-2 text-burrow-blue-light text-sm">
               <div>Built on Starknet</div>
               <div>365-day mining period</div>
               <div>700M $BURR total rewards</div>
-              <div className="text-burrow-orange font-bold">
-                🦫 Let's dig together! 🦫
+              <div className="flex items-center justify-center md:justify-end text-burrow-orange font-bold space-x-2">
+                <img src="/beaver_logo.png" alt="Beaver" className="w-6 h-6" />
+                <span>Let's dig together!</span>
+                <img src="/beaver_logo.png" alt="Beaver" className="w-6 h-6" />
               </div>
             </div>
           </div>
@@ -92,7 +95,7 @@ const Footer = () => {
         {/* Copyright */}
         <div className="border-t border-burrow-brown mt-6 pt-4 text-center">
           <p className="text-burrow-blue-light text-sm">
-            © 2024 BurrowGame. Built with ❤️ for the meme mining community on Starknet.
+            © 2025 BurrowGame. Built with ❤️ for the meme mining community on Starknet.
           </p>
         </div>
       </div>

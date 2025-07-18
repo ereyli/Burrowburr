@@ -10,8 +10,9 @@ const WalletInfo = ({
 }) => {
   return (
     <div className="bg-burrow-dark bg-opacity-80 rounded-2xl p-6 border-2 border-burrow-blue">
-      <h2 className="text-xl font-bold text-burrow-orange mb-4 font-comic">
-        🏦 Wallet Info
+      <h2 className="text-xl font-bold text-burrow-orange mb-4 font-comic flex items-center space-x-2">
+        <img src="/beaver_logo.png" alt="Beaver" className="w-6 h-6" />
+                  <span>Wallet Info</span>
       </h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

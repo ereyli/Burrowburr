@@ -2,6 +2,7 @@
 /* global BigInt */
 import React, { useState, useEffect, useCallback } from 'react';
 import { CONTRACT_ADDRESSES } from './utils/constants';
+import ErrorBoundary from './components/ErrorBoundary';
 import { 
   connectWallet as connectStarknetWallet,
   fetchBalances,
@@ -14,10 +15,159 @@ import {
 } from './utils/starknet';
 import TokenInfo from './components/TokenInfo';
 import ToastContainer, { showToast } from './components/ToastContainer';
+import Header from './components/Header';
 import './index.css';
 
 
 function App() {
+  // Comprehensive error suppression for wallet extensions
+  useEffect(() => {
+    // Completely disable React error overlay
+    if (window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__) {
+      window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__.dismissRuntimeErrors();
+      // Override the showRuntimeErrors function to prevent any errors from showing
+      window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__.showRuntimeErrors = () => {};
+    }
+
+    // Disable React DevTools error reporting
+    if (window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+      window.__REACT_DEVTOOLS_GLOBAL_HOOK__.suppressErrorOverlay = true;
+    }
+
+    // Override console.error to suppress wallet errors from appearing in dev overlay
+    const originalConsoleError = console.error;
+    console.error = (...args) => {
+      const message = args.join(' ').toLowerCase();
+      if (message.includes('keyring is locked') ||
+          message.includes('wallet is locked') ||
+          message.includes('chrome-extension') ||
+          message.includes('injectedscript') ||
+          message.includes('metamask') ||
+          message.includes('extension') ||
+          message.includes('dmkamcknogkgcdfhhbddcghachkejeap')) {
+        // Silently ignore wallet extension errors - no console output at all
+        return;
+      }
+      originalConsoleError.apply(console, args);
+    };
+
+    // Also override console.warn to catch any warnings
+    const originalConsoleWarn = console.warn;
+    console.warn = (...args) => {
+      const message = args.join(' ').toLowerCase();
+      if (message.includes('keyring is locked') ||
+          message.includes('wallet is locked') ||
+          message.includes('chrome-extension') ||
+          message.includes('injectedscript') ||
+          message.includes('metamask') ||
+          message.includes('extension') ||
+          message.includes('dmkamcknogkgcdfhhbddcghachkejeap')) {
+        return;
+      }
+      originalConsoleWarn.apply(console, args);
+    };
+
+    // Suppress runtime errors from wallet extensions
+    const handleError = (event) => {
+      // Check error message
+      if (event.error && event.error.message) {
+        const errorMessage = event.error.message.toLowerCase();
+        if (errorMessage.includes('keyring is locked') ||
+            errorMessage.includes('wallet is locked') ||
+            errorMessage.includes('chrome-extension') ||
+            errorMessage.includes('injectedscript') ||
+            errorMessage.includes('metamask') ||
+            errorMessage.includes('extension') ||
+            errorMessage.includes('dmkamcknogkgcdfhhbddcghachkejeap')) {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          return false;
+        }
+      }
+      
+      // Check filename for extension sources
+      if (event.filename && (
+          event.filename.includes('chrome-extension') ||
+          event.filename.includes('injectedScript') ||
+          event.filename.includes('extension') ||
+          event.filename.includes('dmkamcknogkgcdfhhbddcghachkejeap'))) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return false;
+      }
+      
+      // Check error stack trace
+      if (event.error && event.error.stack) {
+        const stackTrace = event.error.stack.toLowerCase();
+        if (stackTrace.includes('chrome-extension') ||
+            stackTrace.includes('injectedscript') ||
+            stackTrace.includes('extension') ||
+            stackTrace.includes('dmkamcknogkgcdfhhbddcghachkejeap')) {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          return false;
+        }
+      }
+    };
+
+    // Suppress unhandled promise rejections from wallet extensions
+    const handleUnhandledRejection = (event) => {
+      if (event.reason) {
+        const reasonStr = event.reason.toString().toLowerCase();
+        const messageStr = event.reason.message ? event.reason.message.toLowerCase() : '';
+        
+        if (reasonStr.includes('keyring is locked') ||
+            messageStr.includes('keyring is locked') ||
+            messageStr.includes('wallet is locked') ||
+            messageStr.includes('chrome-extension') ||
+            messageStr.includes('injectedscript') ||
+            messageStr.includes('metamask') ||
+            reasonStr.includes('extension')) {
+          event.preventDefault();
+          event.stopPropagation();
+          return false;
+        }
+      }
+    };
+
+    // Override window.onerror to prevent browser error popups
+    const originalWindowOnError = window.onerror;
+    window.onerror = (message, source, lineno, colno, error) => {
+      const messageStr = message?.toString().toLowerCase() || '';
+      const sourceStr = source?.toString().toLowerCase() || '';
+      
+      if (messageStr.includes('keyring is locked') ||
+          messageStr.includes('wallet is locked') ||
+          messageStr.includes('chrome-extension') ||
+          sourceStr.includes('chrome-extension') ||
+          sourceStr.includes('extension')) {
+        // Prevent browser from showing error popup
+        return true; // true prevents the default browser error handling
+      }
+      
+      if (originalWindowOnError) {
+        return originalWindowOnError(message, source, lineno, colno, error);
+      }
+      return false;
+    };
+
+    // Add event listeners with capture = true to catch errors early
+    window.addEventListener('error', handleError, true);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection, true);
+    
+    return () => {
+      // Restore original functions
+      console.error = originalConsoleError;
+      console.warn = originalConsoleWarn;
+      window.onerror = originalWindowOnError;
+      window.removeEventListener('error', handleError, true);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection, true);
+    };
+  }, []);
+
   // Wallet state
   const [wallet, setWallet] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -52,9 +202,9 @@ function App() {
   const [loadingText, setLoadingText] = useState('');
 
   const beaverTypes = {
-    1: { name: 'Noob', emoji: '🦫', rate: 300, cost: 50 },
-    2: { name: 'Pro', emoji: '🦫⭐', rate: 750, cost: 120 },
-    3: { name: 'Degen', emoji: '🦫💎', rate: 2250, cost: 350 }
+    1: { name: 'Noob', rate: 300, cost: 50 },
+    2: { name: 'Pro', rate: 750, cost: 120 },
+    3: { name: 'Degen', rate: 2250, cost: 350 }
   };
 
   // NEW: Upgrade costs per beaver type and level
@@ -259,7 +409,23 @@ function App() {
   };
 
   const getBeaverEmoji = (beaverType) => {
-    return beaverTypes[beaverType]?.emoji || '🦫';
+    // Return PNG logo with appropriate badge for the type
+    const beaverName = beaverTypes[beaverType]?.name || 'Unknown';
+    return (
+      <div style={{ position: 'relative', display: 'inline-block' }}>
+        <img 
+          src="/beaver_logo.png" 
+          alt={`${beaverName} Beaver`} 
+          style={{ width: '40px', height: '40px' }}
+        />
+        {beaverName === 'Pro' && (
+          <span style={{ position: 'absolute', top: '-3px', right: '-3px', fontSize: '16px' }}>⭐</span>
+        )}
+        {beaverName === 'Degen' && (
+          <span style={{ position: 'absolute', top: '-3px', right: '-3px', fontSize: '16px' }}>💎</span>
+        )}
+      </div>
+    );
   };
 
   const getBeaverTypeString = (beaverType) => {
@@ -307,6 +473,24 @@ function App() {
     try {
       const connection = await connectStarknetWallet();
       
+      // Check if connection returned an error
+      if (connection.error) {
+        console.log('❌ Wallet connection error:', connection.error);
+        showToast.error(connection.error, 6000);
+        setIsLoading(false);
+        setLoadingText('');
+        return;
+      }
+      
+      // Check for silent failure (no error but no connection)
+      if (!connection.isConnected && connection.error === null) {
+        console.log('⚠️ Wallet connection cancelled or failed silently');
+        // No toast message for silent failures (wallet locked, user cancelled, etc.)
+        setIsLoading(false);
+        setLoadingText('');
+        return;
+      }
+      
       if (connection.wallet && connection.account) {
         setWallet(connection.wallet);
         setWalletAddress(connection.account.address);
@@ -325,12 +509,14 @@ function App() {
         showToast.success('Wallet connected successfully!', 4000);
       } else {
         console.log('❌ Failed to connect wallet');
+        showToast.error('Failed to connect wallet. Please try again.', 4000);
         setIsLoading(false);
         setLoadingText('');
       }
     } catch (error) {
       console.error('❌ Wallet connection error:', error);
-              showToast.error('Failed to connect wallet. Please make sure you have ArgentX or Braavos installed.', 6000);
+      // This should rarely happen now since errors are handled in starknet.js
+      showToast.error('Failed to connect wallet. Please make sure you have ArgentX or Braavos installed.', 6000);
       setIsLoading(false);
       setLoadingText('');
     } finally {
@@ -357,7 +543,7 @@ function App() {
     setLoadingText(`Buying ${beaverTypes[selectedBeaver].name} beaver...`);
 
     try {
-      console.log(`🦫 Staking ${beaverTypes[selectedBeaver].name} beaver for ${beaverCost} STRK`);
+      console.log(`Staking ${beaverTypes[selectedBeaver].name} beaver for ${beaverCost} STRK`);
       
       if (!workingStrkAddress) {
         throw new Error('STRK address not available');
@@ -499,23 +685,8 @@ function App() {
   };
 
   return (
+    <ErrorBoundary>
     <div>
-      {/* Mainnet Live Banner */}
-      <div style={{
-        backgroundColor: '#22c55e',
-        color: 'white',
-        textAlign: 'center',
-        padding: '8px 0',
-        fontSize: '14px',
-        fontWeight: 'bold',
-        position: 'sticky',
-        top: 0,
-        zIndex: 1000,
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
-        🚀 LIVE ON STARKNET MAINNET • BurrowGame is now fully operational!
-      </div>
-
       {/* Loading Overlay */}
       {isLoading && (
         <div style={{
@@ -532,7 +703,9 @@ function App() {
           zIndex: 1000,
           color: 'white'
         }}>
-          <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🦫</div>
+          <div style={{ marginBottom: '20px' }}>
+            <img src="/beaver_logo.png" alt="Mining Beaver" style={{ width: '64px', height: '64px' }} />
+          </div>
           <div style={{ fontSize: '1.2rem', marginBottom: '10px' }}>
             {loadingText || 'Processing...'}
           </div>
@@ -546,24 +719,132 @@ function App() {
       <header className="header">
         <div className="header-content">
           <div className="logo">
-            <span style={{fontSize: '2.5rem'}}>🦫</span>
+            <img src="/beaver_logo.png" alt="Burrow Beaver" style={{ width: '40px', height: '40px', marginRight: '10px' }} />
             <h1>Burrow</h1>
           </div>
           
-          {!isConnected ? (
-            <button 
-              onClick={connectWallet} 
-              className="btn btn-primary"
-              disabled={isConnecting}
+          <div className="header-buttons" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            {/* BURR Buy Button - DexScreener Link */}
+            <a
+              href="https://dexscreener.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn"
+              style={{
+                background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+                color: 'white',
+                border: 'none',
+                fontWeight: 'bold',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                fontSize: '14px',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'linear-gradient(135deg, #FFC700, #FF8C00)';
+                e.target.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'linear-gradient(135deg, #FFD700, #FFA500)';
+                e.target.style.transform = 'scale(1)';
+              }}
             >
-              {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+              💰 Buy $BURR
+            </a>
+
+            <button 
+              onClick={isConnected ? () => {
+                // Disconnect wallet
+                setWallet(null);
+                setIsConnected(false);
+                setWalletAddress('');
+                setBurrBalance('0');
+                setBurrBalanceRaw(BigInt(0));
+                setStrkBalance('0');
+                setWorkingStrkAddress(null);
+                setHasStaked(false);
+                setBeavers([]);
+                setBeaverType(0);
+                setBeaverLevel(0);
+                setPendingRewards('0');
+                setRealTimePendingRewards('0');
+                setRealTimePendingRewardsRaw(0);
+                setLocalBurrEarned(0);
+                setLastMiningUpdate(Date.now());
+                setLastUpdateTimestamp(Math.floor(Date.now() / 1000));
+                showToast.success('Wallet disconnected successfully!', 3000);
+              } : connectWallet}
+              className="btn"
+              disabled={isConnecting}
+              style={{ 
+                whiteSpace: 'nowrap', 
+                flexShrink: 0,
+                background: isConnected 
+                  ? 'linear-gradient(135deg, #dc3545, #c82333)' 
+                  : 'linear-gradient(135deg, #007bff, #0056b3)',
+                color: 'white',
+                border: 'none',
+                fontWeight: 'bold',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                fontSize: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              onMouseEnter={(e) => {
+                if (isConnected) {
+                  e.target.style.background = 'linear-gradient(135deg, #c82333, #a71e2a)';
+                } else {
+                  e.target.style.background = 'linear-gradient(135deg, #0056b3, #004085)';
+                }
+                e.target.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                if (isConnected) {
+                  e.target.style.background = 'linear-gradient(135deg, #dc3545, #c82333)';
+                } else {
+                  e.target.style.background = 'linear-gradient(135deg, #007bff, #0056b3)';
+                }
+                e.target.style.transform = 'scale(1)';
+              }}
+            >
+              {isConnecting ? (
+                <>
+                  <div style={{ 
+                    width: '12px', 
+                    height: '12px', 
+                    border: '2px solid transparent',
+                    borderTop: '2px solid white',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }}></div>
+                  Connecting...
+                </>
+              ) : isConnected ? (
+                <>
+                  <div style={{ 
+                    width: '8px', 
+                    height: '8px', 
+                    borderRadius: '50%', 
+                    backgroundColor: '#4caf50',
+                    flexShrink: 0
+                  }}></div>
+                  Disconnect
+                </>
+              ) : (
+                'Connect Wallet'
+              )}
             </button>
-          ) : (
-            <div className="wallet-connected">
-              <div className="status-dot"></div>
-              <span>Connected: {formatAddress(walletAddress)}</span>
-            </div>
-          )}
+          </div>
         </div>
       </header>
 
@@ -595,7 +876,10 @@ function App() {
         <div className="grid grid-2">
           {/* Stake Section */}
           <div className="card">
-            <h2>🦫 Beaver Store</h2>
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <img src="/beaver_logo.png" alt="Beaver" style={{ width: '28px', height: '28px' }} />
+              Beaver Store
+            </h2>
             
             <div className="beaver-grid">
               {Object.entries(beaverTypes).map(([key, beaver]) => (
@@ -604,7 +888,19 @@ function App() {
                   className={`beaver-option ${selectedBeaver === parseInt(key) ? 'selected' : ''}`}
                   onClick={() => setSelectedBeaver(parseInt(key))}
                 >
-                  <span className="beaver-emoji">{beaver.emoji}</span>
+                  <div className="beaver-emoji" style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <img 
+                      src="/beaver_logo.png" 
+                      alt={`${beaver.name} Beaver`} 
+                      style={{ width: '70px', height: '70px' }}
+                    />
+                    {beaver.name === 'Pro' && (
+                      <span style={{ position: 'absolute', top: '-5px', right: '-5px', fontSize: '20px' }}>⭐</span>
+                    )}
+                    {beaver.name === 'Degen' && (
+                      <span style={{ position: 'absolute', top: '-5px', right: '-5px', fontSize: '20px' }}>💎</span>
+                    )}
+                  </div>
                   <div className="beaver-name">{beaver.name}</div>
                   <div className="beaver-rate">{beaver.rate} $BURR/hour</div>
                   <div className="beaver-cost">Cost: {beaver.cost} $STRK</div>
@@ -627,7 +923,10 @@ function App() {
 
           {/* Claim Section */}
           <div className="card">
-            <h2>💰 Claim Rewards</h2>
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <img src="/beaver_logo.png" alt="Beaver" style={{ width: '28px', height: '28px' }} />
+              Claim Rewards
+            </h2>
 
             {hasStaked ? (
               <>
@@ -666,9 +965,9 @@ function App() {
         {/* Mining Fleet - Only show if has staked beavers */}
         {hasStaked && beavers.length > 0 && (
           <div className="card">
-            <h2>
-              <span style={{fontSize: '1.7em', verticalAlign: 'middle'}}>🦫</span>
-              <span style={{fontSize: '1.2em', verticalAlign: 'middle', marginLeft: '5px'}}>⛏️</span>
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <img src="/beaver_logo.png" alt="Beaver" style={{ width: '32px', height: '32px' }} />
+              <span>⛏️</span>
               <span style={{marginLeft: '10px'}}>Your Mining Fleet ({beavers.length} Beavers)</span>
             </h2>
             
@@ -699,7 +998,9 @@ function App() {
                       </div>
                     )}
                     <div className="beaver-info">
-                      <span style={{fontSize: '2.5rem'}}>{getBeaverEmoji(beaver.type + 1)}</span>
+                      <div style={{display: 'flex', justifyContent: 'center', marginBottom: '8px'}}>
+                        {getBeaverEmoji(beaver.type + 1)}
+                      </div>
                       <div>
                         <div style={{fontSize: '1.1rem', fontWeight: 'bold'}}>
                           {getBeaverTypeString(beaver.type + 1)} #{beaver.id}
@@ -729,20 +1030,7 @@ function App() {
           </div>
         )}
 
-        {/* Welcome Message */}
-        {!isConnected && (
-          <div className="welcome">
-            <span className="welcome-emoji">🦫</span>
-            <h2>Welcome to Burrow!</h2>
-            <p>
-              The ultimate meme mining game on Starknet! Connect your ArgentX or Braavos wallet, 
-              stake $STRK to buy a beaver, and start digging for $BURR tokens. The deeper you dig, the more you earn!
-            </p>
-            <div style={{color: 'var(--text-light)', fontSize: '1.1rem'}}>
-              🚀 Connect your Starknet wallet to start your mining adventure! 🚀
-            </div>
-          </div>
-        )}
+
       </div>
 
       {/* Rewards Information Table */}
@@ -754,7 +1042,7 @@ function App() {
         {/* Hourly Earnings Table */}
         <div style={{marginBottom: '30px'}}>
           <h3 style={{color: 'var(--accent-orange)', marginBottom: '15px', textAlign: 'center'}}>
-            💰 Hourly Earnings by Type & Level
+            Hourly Earnings by Type & Level
           </h3>
           <div style={{overflowX: 'auto'}}>
             <table style={{
@@ -776,8 +1064,9 @@ function App() {
               </thead>
               <tbody>
                 <tr style={{borderBottom: '1px solid var(--border-color)'}}>
-                  <td style={{padding: '12px', fontWeight: 'bold', color: 'var(--text-primary)'}}>
-                    🦫 Noob
+                  <td style={{padding: '12px', fontWeight: 'bold', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                    <img src="/beaver_logo.png" alt="Beaver" style={{ width: '20px', height: '20px' }} />
+                    Noob
                   </td>
                   <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>300</td>
                   <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>450</td>
@@ -786,8 +1075,9 @@ function App() {
                   <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)', fontWeight: 'bold'}}>1,519</td>
                 </tr>
                 <tr style={{borderBottom: '1px solid var(--border-color)'}}>
-                  <td style={{padding: '12px', fontWeight: 'bold', color: 'var(--text-primary)'}}>
-                    🦫⭐ Pro
+                  <td style={{padding: '12px', fontWeight: 'bold', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                    <img src="/beaver_logo.png" alt="Beaver" style={{ width: '20px', height: '20px' }} />
+                    ⭐ Pro
                   </td>
                   <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>750</td>
                   <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>1,125</td>
@@ -796,8 +1086,9 @@ function App() {
                   <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)', fontWeight: 'bold'}}>3,797</td>
                 </tr>
                 <tr>
-                  <td style={{padding: '12px', fontWeight: 'bold', color: 'var(--text-primary)'}}>
-                    🦫💎 Degen
+                  <td style={{padding: '12px', fontWeight: 'bold', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                    <img src="/beaver_logo.png" alt="Beaver" style={{ width: '20px', height: '20px' }} />
+                    💎 Degen
                   </td>
                   <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>2,250</td>
                   <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>3,375</td>
@@ -823,19 +1114,28 @@ function App() {
             border: '2px solid var(--accent-blue)'
           }}>
             <h4 style={{color: 'var(--accent-blue)', marginBottom: '15px', textAlign: 'center'}}>
-              💵 Purchase Costs
+              Purchase Costs
             </h4>
             <div style={{lineHeight: '1.8'}}>
               <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
-                <span>🦫 Noob:</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <img src="/beaver_logo.png" alt="Beaver" style={{ width: '16px', height: '16px' }} />
+                  Noob:
+                </span>
                 <strong style={{color: 'var(--accent-orange)'}}>50 $STRK</strong>
               </div>
               <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
-                <span>🦫⭐ Pro:</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <img src="/beaver_logo.png" alt="Beaver" style={{ width: '16px', height: '16px' }} />
+                  ⭐ Pro:
+                </span>
                 <strong style={{color: 'var(--accent-orange)'}}>120 $STRK</strong>
               </div>
               <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                <span>🦫💎 Degen:</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <img src="/beaver_logo.png" alt="Beaver" style={{ width: '16px', height: '16px' }} />
+                  💎 Degen:
+                </span>
                 <strong style={{color: 'var(--accent-orange)'}}>350 $STRK</strong>
               </div>
             </div>
@@ -883,19 +1183,28 @@ function App() {
             border: '2px solid var(--accent-red)'
           }}>
             <h4 style={{color: 'var(--accent-red)', marginBottom: '15px', textAlign: 'center'}}>
-              🔥 Total Upgrade Costs
+              Total Upgrade Costs
             </h4>
             <div style={{lineHeight: '1.8'}}>
               <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
-                <span>🦫 Noob:</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <img src="/beaver_logo.png" alt="Beaver" style={{ width: '16px', height: '16px' }} />
+                  Noob:
+                </span>
                 <strong style={{color: 'var(--accent-orange)'}}>200K $BURR</strong>
               </div>
               <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
-                <span>🦫⭐ Pro:</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <img src="/beaver_logo.png" alt="Beaver" style={{ width: '16px', height: '16px' }} />
+                  ⭐ Pro:
+                </span>
                 <strong style={{color: 'var(--accent-orange)'}}>400K $BURR</strong>
               </div>
               <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                <span>🦫💎 Degen:</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <img src="/beaver_logo.png" alt="Beaver" style={{ width: '16px', height: '16px' }} />
+                  💎 Degen:
+                </span>
                 <strong style={{color: 'var(--accent-orange)'}}>1.02M $BURR</strong>
               </div>
             </div>
@@ -912,58 +1221,166 @@ function App() {
           color: 'white'
         }}>
           <h4 style={{marginBottom: '15px', fontSize: '1.1rem'}}>
-            🎯 Max Daily Earnings (Level 5)
+            Max Daily Earnings (Level 5)
           </h4>
           <div style={{display: 'flex', justifyContent: 'center', gap: '30px', flexWrap: 'wrap'}}>
             <div>
-              <strong>🦫 Noob:</strong> <span style={{fontSize: '1.1rem'}}>36,450 $BURR</span>
+              <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <img src="/beaver_logo.png" alt="Beaver" style={{ width: '18px', height: '18px' }} />
+                Noob:
+              </strong> <span style={{fontSize: '1.1rem'}}>36,450 $BURR</span>
             </div>
             <div>
-              <strong>🦫⭐ Pro:</strong> <span style={{fontSize: '1.1rem'}}>91,125 $BURR</span>
+              <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <img src="/beaver_logo.png" alt="Beaver" style={{ width: '18px', height: '18px' }} />
+                ⭐ Pro:
+              </strong> <span style={{fontSize: '1.1rem'}}>91,125 $BURR</span>
             </div>
             <div>
-              <strong>🦫💎 Degen:</strong> <span style={{fontSize: '1.1rem'}}>273,375 $BURR</span>
+              <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <img src="/beaver_logo.png" alt="Beaver" style={{ width: '18px', height: '18px' }} />
+                💎 Degen:
+              </strong> <span style={{fontSize: '1.1rem'}}>273,375 $BURR</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="footer">
-        <div className="footer-content">
-          <div className="footer-links">
-            <a href="https://twitter.com/burrowgame" className="footer-link" target="_blank" rel="noopener noreferrer">
-              <span style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}}>
-                {/* X (Twitter) SVG icon */}
-                <svg width="20" height="20" viewBox="0 0 1200 1227" fill="none" xmlns="http://www.w3.org/2000/svg" style={{verticalAlign: 'middle'}}>
-                  <path d="M1199.61 21.4691L764.305 637.527L1177.44 1205.53H1017.13L670.527 734.527L273.305 1205.53H0.527344L464.527 613.527L67.3047 21.4691H227.305L545.305 462.527L918.527 21.4691H1199.61ZM973.305 1121.53H1077.44L370.527 105.469H266.527L973.305 1121.53Z" fill="#fff"/>
-                </svg>
-              </span>
-              X
-            </a>
-            <a href="https://dexscreener.com/starknet/burr" className="footer-link" target="_blank" rel="noopener noreferrer">
-              <span>📊</span> DexScreener
-            </a>
+      {/* Welcome Message */}
+      {!isConnected && (
+        <div className="welcome" style={{ margin: '40px auto', maxWidth: '800px', textAlign: 'center' }}>
+          <h2 style={{ fontSize: '2.5rem', background: 'linear-gradient(135deg, #FFD700, #FFA500)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '20px' }}>
+            Welcome to Burrow!
+          </h2>
+          <p style={{ fontSize: '1.2rem', lineHeight: '1.6', marginBottom: '25px', color: 'var(--text-color)' }}>
+            Dive into the ultimate crypto mining adventure on Starknet! Connect your ArgentX or Braavos wallet, 
+            stake STRK tokens to recruit powerful mining beavers, and embark on an epic journey to discover precious BURR tokens. 
+          </p>
+          <p style={{ fontSize: '1.1rem', color: 'var(--text-light)', marginBottom: '25px' }}>
+            The deeper your beavers dig, the richer the rewards become!
+          </p>
+          <div style={{ 
+            background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.1))', 
+            padding: '20px', 
+            borderRadius: '15px', 
+            border: '2px solid var(--accent-color)',
+            fontSize: '1.1rem',
+            fontWeight: 'bold'
+          }}>
+            Connect your Starknet wallet to begin your mining expedition!
           </div>
-          <div className="contract-info" style={{textAlign: 'center'}}>
+        </div>
+      )}
+
+      {/* Footer */}
+      <footer style={{ 
+        background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', 
+        padding: '40px 20px', 
+        borderTop: '3px solid var(--accent-color)',
+        marginTop: '50px'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          
+          {/* Big Social Links Section */}
+          <div style={{
+            display: 'flex',
+            gap: '30px',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            marginBottom: '40px'
+          }}>
+            
+            {/* X (Twitter) Card */}
+            <a 
+              href="https://x.com/burr_burrow" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="social-card-x"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px',
+                background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+                borderRadius: '15px',
+                textDecoration: 'none',
+                color: 'white',
+                fontSize: '1.2rem',
+                fontWeight: 'bold',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.5)',
+                border: '2px solid #333333',
+                minWidth: '250px',
+                flex: '1 1 250px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <svg width="32" height="32" viewBox="0 0 1200 1227" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1199.61 21.4691L764.305 637.527L1177.44 1205.53H1017.13L670.527 734.527L273.305 1205.53H0.527344L464.527 613.527L67.3047 21.4691H227.305L545.305 462.527L918.527 21.4691H1199.61ZM973.305 1121.53H1077.44L370.527 105.469H266.527L973.305 1121.53Z" fill="currentColor"/>
+                </svg>
+                <div>
+                  <div style={{ fontSize: '1.2rem' }}>Follow Us</div>
+                </div>
+              </div>
+            </a>
+
+
+          </div>
+
+          {/* Contract Info */}
+          <div style={{
+            textAlign: 'center',
+            marginBottom: '30px',
+            padding: '20px',
+            background: 'rgba(255, 180, 71, 0.1)',
+            borderRadius: '15px',
+            border: '1px solid rgba(255, 180, 71, 0.3)'
+          }}>
+            <div style={{ fontSize: '1.1rem', color: 'var(--accent-color)', marginBottom: '10px', fontWeight: 'bold' }}>
+              📜 Official Contract Address
+            </div>
             <span
-              style={{cursor: 'pointer', color: '#ffb347', fontWeight: 'bold', letterSpacing: '0.5px'}}
+              className="contract-address"
+              style={{
+                cursor: 'pointer', 
+                color: '#ffb347', 
+                fontWeight: 'bold', 
+                letterSpacing: '0.5px',
+                fontSize: '1rem',
+                wordBreak: 'break-all',
+                padding: '8px 15px',
+                background: 'rgba(255, 180, 71, 0.2)',
+                borderRadius: '8px',
+                display: 'inline-block',
+                transition: 'all 0.3s ease'
+              }}
               onClick={handleCopy}
               title="Click to copy address"
             >
               BURR Token: {CONTRACT_ADDRESSES.BURR_TOKEN}
             </span>
-            {copied && <span style={{marginLeft: '10px', color: '#4caf50', fontWeight: 'bold'}}>Copied!</span>}
+            {copied && <div style={{marginTop: '10px', color: '#4caf50', fontWeight: 'bold', fontSize: '1rem'}}>✅ Address Copied!</div>}
           </div>
-          <div style={{color: 'var(--text-light)'}}>
-            © 2024 BurrowGame. Built with ❤️ for the meme mining community on Starknet.
+
+          {/* Copyright */}
+          <div style={{
+            color: 'var(--text-light)',
+            textAlign: 'center',
+            fontSize: '1rem',
+            padding: '20px 0',
+            borderTop: '1px solid rgba(255, 180, 71, 0.2)'
+          }}>
+            © 2025 BurrowGame. Built with ❤️ for the meme mining community on Starknet.
           </div>
         </div>
       </footer>
+
+
       
       {/* Toast Notifications */}
       <ToastContainer />
     </div>
+    </ErrorBoundary>
   );
 }
 
