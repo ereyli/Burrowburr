@@ -1,8 +1,8 @@
 import React from 'react';
 
 // Contract addresses - deployed to Starknet Mainnet
-export const BURR_TOKEN_ADDRESS = "0x04553dfcd5b26cdc529b684627db845517a2d47f20a9101f59479c4bf9d91e4e"; // Mainnet BURR token
-export const GAME_CONTRACT_ADDRESS = "0x05c2320a3dea383f35a174ffc098a289edf89067e84701f0c778ed5e37c1cc1e"; // Mainnet BurrowGame contract
+export const BURR_TOKEN_ADDRESS = "0x054ab4f64c957ef3c134a3bc72f88515a622a13f7300103e817e87757b9bcfb4"; // New BURR token with 2.1B supply
+export const GAME_CONTRACT_ADDRESS = "0x00efeb19c7b1e8ec2a001815a2d3e3de34f6817749feaf1764ccbdccedccdca5"; // New BurrowGame with 1.68B pool
 
 // STRK token address (Starknet Mainnet official)
 export const STRK_ADDRESSES = ["0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"]; // Official STRK token mainnet
@@ -36,7 +36,8 @@ export const GAME_CONFIG = {
       maxLevel: 5
     }
   },
-  TOTAL_REWARDS: 700000000, // 700M BURR total
+  TOTAL_REWARDS: 1680000000, // 1.68B BURR total (80% of 2.1B)
+  MAX_SUPPLY: 2100000000, // 2.1B BURR max supply
   GAME_DURATION_DAYS: 365
 };
 
@@ -156,14 +157,18 @@ export const formatNumber = (num) => {
   if (number === 0) return '0';
   
   // For very large numbers, use compact notation
-  if (number >= 1000000000000) {
-    return (number / 1000000000000).toFixed(1) + 'T';
-  } else if (number >= 1000000000) {
-    return (number / 1000000000).toFixed(1) + 'B';
-  } else if (number >= 1000000) {
-    return (number / 1000000).toFixed(1) + 'M';
-  } else if (number >= 1000) {
-    return (number / 1000).toFixed(1) + 'K';
+  if (number >= 1e18) {
+    return (number / 1e18).toFixed(2) + ' BURR';
+  } else if (number >= 1e15) {
+    return (number / 1e15).toFixed(2) + 'Q';
+  } else if (number >= 1e12) {
+    return (number / 1e12).toFixed(2) + 'T';
+  } else if (number >= 1e9) {
+    return (number / 1e9).toFixed(2) + 'B';
+  } else if (number >= 1e6) {
+    return (number / 1e6).toFixed(2) + 'M';
+  } else if (number >= 1e3) {
+    return (number / 1e3).toFixed(2) + 'K';
   } else if (number >= 1) {
     return number.toFixed(2);
   } else {
@@ -180,4 +185,4 @@ export const calculateTimeLeft = (startTime, duration) => {
   const hours = Math.floor((remaining % (24 * 60 * 60)) / (60 * 60));
   
   return { days, hours };
-}; 
+};
