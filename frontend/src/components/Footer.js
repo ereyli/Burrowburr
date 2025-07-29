@@ -84,9 +84,9 @@ const Footer = () => {
               <div>365-day mining period</div>
               <div>700M $BURR total rewards</div>
               <div className="flex items-center justify-center md:justify-end text-burrow-orange font-bold space-x-2">
-                <img src="/beaver_logo.png" alt="Beaver" className="w-6 h-6" />
+                <img src="/beaver_logo.png" alt="Beaver" className="w-6 h-6 image-container" />
                 <span>Let's dig together!</span>
-                <img src="/beaver_logo.png" alt="Beaver" className="w-6 h-6" />
+                <img src="/beaver_logo.png" alt="Beaver" className="w-6 h-6 image-container" />
               </div>
             </div>
           </div>

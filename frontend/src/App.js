@@ -5,6 +5,12 @@ import { CONTRACT_ADDRESSES } from './utils/constants';
 import ErrorBoundary from './components/ErrorBoundary';
 import { 
   connectWallet as connectStarknetWallet,
+  disconnectWallet,
+  autoReconnectWallet,
+  wasWalletConnected,
+  startConnectionMonitor,
+  stopConnectionMonitor,
+  maintainConnection,
   fetchBalances,
   fetchPlayerInfo,
   stakeBeaver as stakeStarknetBeaver,
@@ -173,13 +179,15 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isAutoReconnecting, setIsAutoReconnecting] = useState(false);
   
 
 
   // Balances
   const [burrBalance, setBurrBalance] = useState('0'); // Formatted balance for display
   const [burrBalanceRaw, setBurrBalanceRaw] = useState(BigInt(0)); // Raw balance for calculations
-  const [strkBalance, setStrkBalance] = useState('0');
+  const [strkBalance, setStrkBalance] = useState('0'); // Formatted balance for display
+  const [strkBalanceRaw, setStrkBalanceRaw] = useState(BigInt(0)); // Raw balance for calculations
   const [workingStrkAddress, setWorkingStrkAddress] = useState(null);
 
   // Game state
@@ -229,6 +237,7 @@ function App() {
       setBurrBalance(balances.burrFormatted);
       setBurrBalanceRaw(balances.burrBalance); // Store raw BigInt value
       setStrkBalance(balances.strkFormatted);
+      setStrkBalanceRaw(balances.strkBalance); // Store raw BigInt value
       setWorkingStrkAddress(balances.workingStrkAddress);
 
       // Fetch player info
@@ -284,6 +293,73 @@ function App() {
       console.error('❌ Error fetching real-time pending rewards:', error);
     }
   }, [isConnected, walletAddress, hasStaked]);
+
+  // Auto-reconnect on page load
+  useEffect(() => {
+    const attemptAutoReconnect = async () => {
+      if (wasWalletConnected() && !isConnected && !isConnecting) {
+        console.log('🔄 Starting auto-reconnect...');
+        setIsAutoReconnecting(true);
+        
+        try {
+          const connection = await autoReconnectWallet();
+          
+          if (connection.isConnected && connection.autoReconnect) {
+            console.log('✅ Auto-reconnect successful:', connection.address);
+            setWallet(connection.wallet);
+            setWalletAddress(connection.account.address);
+            setIsConnected(true);
+            
+            // Setup connection monitoring
+            maintainConnection();
+            startConnectionMonitor(() => {
+              // Handle disconnect
+              setWallet(null);
+              setIsConnected(false);
+              setWalletAddress('');
+              setBurrBalance('0');
+              setBurrBalanceRaw(BigInt(0));
+              setStrkBalance('0');
+              setStrkBalanceRaw(BigInt(0));
+              setWorkingStrkAddress(null);
+              setHasStaked(false);
+              setBeavers([]);
+              setBeaverType(0);
+              setBeaverLevel(0);
+              setPendingRewards('0');
+              setRealTimePendingRewards('0');
+              setRealTimePendingRewardsRaw(0);
+              setLocalBurrEarned(0);
+              setLastMiningUpdate(Date.now());
+              setLastUpdateTimestamp(Math.floor(Date.now() / 1000));
+              showToast.warning('Wallet disconnected. Please reconnect if needed.', 4000);
+            });
+            
+            // Auto-fetch data after successful reconnection
+            setTimeout(async () => {
+              await refreshData();
+            }, 1500);
+            
+            showToast.success('Welcome back! Wallet reconnected automatically.', 4000);
+          } else {
+            console.log('⏭️ Auto-reconnect not needed or failed');
+          }
+        } catch (error) {
+          console.error('❌ Auto-reconnect error:', error);
+        } finally {
+          setIsAutoReconnecting(false);
+        }
+      }
+    };
+
+    // Delay the auto-reconnect to ensure DOM is fully loaded
+    const timeoutId = setTimeout(attemptAutoReconnect, 1500);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      stopConnectionMonitor(); // Clean up on unmount
+    };
+  }, []); // Empty dependency array - only run once on mount
 
   // Auto-refresh data every 30 seconds (for balances and beaver info)
   useEffect(() => {
@@ -408,24 +484,34 @@ function App() {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  const getBeaverEmoji = (beaverType) => {
-    // Return PNG logo with appropriate badge for the type
-    const beaverName = beaverTypes[beaverType]?.name || 'Unknown';
-    return (
-      <div style={{ position: 'relative', display: 'inline-block' }}>
+  // Memoized beaver image component to prevent re-renders
+  const BeaverImage = React.useMemo(() => {
+    return ({ beaverType, size = '40px' }) => {
+      const beaverName = beaverTypes[beaverType]?.name || 'Unknown';
+      const imageName = beaverName.toLowerCase();
+      
+      return (
         <img 
-          src="/beaver_logo.png" 
+          src={`/${imageName}.png`} 
           alt={`${beaverName} Beaver`} 
-          style={{ width: '40px', height: '40px' }}
+          style={{ 
+            width: size, 
+            height: size, 
+            objectFit: 'contain',
+            display: 'block'
+          }}
+          onError={(e) => {
+            console.error(`❌ Failed to load: ${e.target.src}`);
+            e.target.src = '/beaver_logo.png';
+          }}
         />
-        {beaverName === 'Pro' && (
-          <span style={{ position: 'absolute', top: '-3px', right: '-3px', fontSize: '16px' }}>⭐</span>
-        )}
-        {beaverName === 'Degen' && (
-          <span style={{ position: 'absolute', top: '-3px', right: '-3px', fontSize: '16px' }}>💎</span>
-        )}
-      </div>
-    );
+      );
+    };
+  }, [beaverTypes]);
+
+  const getBeaverEmoji = (beaverType) => {
+    // Return memoized beaver image
+    return <BeaverImage beaverType={beaverType} size="40px" />;
   };
 
   const getBeaverTypeString = (beaverType) => {
@@ -465,6 +551,8 @@ function App() {
     await updateRealTimePendingRewards();
   };
 
+
+
   const connectWallet = async () => {
     setIsConnecting(true);
     setIsLoading(true);
@@ -495,6 +583,31 @@ function App() {
         setWallet(connection.wallet);
         setWalletAddress(connection.account.address);
         setIsConnected(true);
+        
+        // Setup connection monitoring for new connections
+        maintainConnection();
+        startConnectionMonitor(() => {
+          // Handle disconnect
+          setWallet(null);
+          setIsConnected(false);
+          setWalletAddress('');
+          setBurrBalance('0');
+          setBurrBalanceRaw(BigInt(0));
+          setStrkBalance('0');
+          setStrkBalanceRaw(BigInt(0));
+          setWorkingStrkAddress(null);
+          setHasStaked(false);
+          setBeavers([]);
+          setBeaverType(0);
+          setBeaverLevel(0);
+          setPendingRewards('0');
+          setRealTimePendingRewards('0');
+          setRealTimePendingRewardsRaw(0);
+          setLocalBurrEarned(0);
+          setLastMiningUpdate(Date.now());
+          setLastUpdateTimestamp(Math.floor(Date.now() / 1000));
+          showToast.warning('Wallet disconnected. Please reconnect if needed.', 4000);
+        });
         
         setLoadingText('Fetching account data...');
         
@@ -532,10 +645,21 @@ function App() {
 
     const beaverCost = beaverTypes[selectedBeaver].cost;
     const beaverCostWei = BigInt(beaverCost) * BigInt(10 ** 18);
-    const currentStrkBalance = parseFloat(strkBalance.replace(/,/g, ''));
+    
+    // Use raw STRK balance for accurate comparison
+    const currentStrkBalanceWei = strkBalanceRaw || BigInt(0);
+    const currentStrkBalance = Number(currentStrkBalanceWei) / Math.pow(10, 18);
+    
+    console.log('🔍 STRK Balance Debug:');
+    console.log('Formatted strkBalance:', strkBalance);
+    console.log('Raw strkBalanceRaw:', strkBalanceRaw.toString());
+    console.log('Converted to number:', currentStrkBalance);
+    console.log('Required cost:', beaverCost);
+    console.log('Required cost in Wei:', beaverCostWei.toString());
+    console.log('Has sufficient?', currentStrkBalanceWei >= beaverCostWei);
 
-    if (currentStrkBalance < beaverCost) {
-              showToast.error(`Insufficient $STRK balance. Need ${beaverCost} $STRK to buy this beaver.`, 6000);
+    if (currentStrkBalanceWei < beaverCostWei) {
+              showToast.error(`Insufficient $STRK balance. You have ${currentStrkBalance.toFixed(2)} $STRK, need ${beaverCost} $STRK to buy this beaver.`, 6000);
       return;
     }
 
@@ -610,8 +734,6 @@ function App() {
       
       // Check if this is the mint authorization error
       if (error.message && error.message.includes('Not authorized to mint')) {
-        console.log('🔧 Detected mint error, treating as successful for testing');
-        
         setLoadingText('Claim completed (testing mode)...');
         
         // Reset local mining earnings after claim
@@ -688,7 +810,7 @@ function App() {
     <ErrorBoundary>
     <div>
       {/* Loading Overlay */}
-      {isLoading && (
+      {(isLoading || isAutoReconnecting) && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -704,10 +826,10 @@ function App() {
           color: 'white'
         }}>
           <div style={{ marginBottom: '20px' }}>
-            <img src="/beaver_logo.png" alt="Mining Beaver" style={{ width: '64px', height: '64px' }} />
+            <img src="/beaver_logo.png" alt="Mining Beaver" style={{ width: '64px', height: '64px' }} className="image-container" />
           </div>
           <div style={{ fontSize: '1.2rem', marginBottom: '10px' }}>
-            {loadingText || 'Processing...'}
+            {isAutoReconnecting ? 'Reconnecting to your wallet...' : (loadingText || 'Processing...')}
           </div>
           <div className="pulse" style={{ color: 'var(--accent-orange)' }}>
             Please wait...
@@ -719,7 +841,7 @@ function App() {
       <header className="header">
         <div className="header-content">
           <div className="logo">
-            <img src="/beaver_logo.png" alt="Burrow Beaver" style={{ width: '40px', height: '40px', marginRight: '10px' }} />
+            <img src="/beaver_logo.png" alt="Burrow Beaver" style={{ width: '40px', height: '40px', marginRight: '10px' }} className="image-container" />
             <h1>Burrow</h1>
           </div>
           
@@ -755,18 +877,23 @@ function App() {
                 e.target.style.transform = 'scale(1)';
               }}
             >
-              💰 Buy $BURR
+              Buy $BURR
             </a>
 
             <button 
-              onClick={isConnected ? () => {
-                // Disconnect wallet
+              onClick={isConnected ? async () => {
+                // Stop connection monitoring
+                stopConnectionMonitor();
+                
+                // Disconnect wallet (this will also clear localStorage)
+                await disconnectWallet();
                 setWallet(null);
                 setIsConnected(false);
                 setWalletAddress('');
                 setBurrBalance('0');
                 setBurrBalanceRaw(BigInt(0));
                 setStrkBalance('0');
+                setStrkBalanceRaw(BigInt(0));
                 setWorkingStrkAddress(null);
                 setHasStaked(false);
                 setBeavers([]);
@@ -781,7 +908,7 @@ function App() {
                 showToast.success('Wallet disconnected successfully!', 3000);
               } : connectWallet}
               className="btn"
-              disabled={isConnecting}
+              disabled={isConnecting || isAutoReconnecting}
               style={{ 
                 whiteSpace: 'nowrap', 
                 flexShrink: 0,
@@ -817,7 +944,7 @@ function App() {
                 e.target.style.transform = 'scale(1)';
               }}
             >
-              {isConnecting ? (
+              {(isConnecting || isAutoReconnecting) ? (
                 <>
                   <div style={{ 
                     width: '12px', 
@@ -827,7 +954,7 @@ function App() {
                     borderRadius: '50%',
                     animation: 'spin 1s linear infinite'
                   }}></div>
-                  Connecting...
+                  {isAutoReconnecting ? 'Reconnecting...' : 'Connecting...'}
                 </>
               ) : isConnected ? (
                 <>
@@ -852,7 +979,7 @@ function App() {
         {/* Wallet Info */}
         {isConnected && (
           <div className="card">
-            <h2>🏦 Wallet Info</h2>
+            <h2>Wallet Info</h2>
             <div className="grid grid-3">
               <div className="info-box">
                 <div className="info-label">Address</div>
@@ -867,6 +994,7 @@ function App() {
                 <div className="info-value orange">{strkBalance}</div>
               </div>
             </div>
+
           </div>
         )}
 
@@ -877,7 +1005,7 @@ function App() {
           {/* Stake Section */}
           <div className="card">
             <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <img src="/beaver_logo.png" alt="Beaver" style={{ width: '28px', height: '28px' }} />
+              <img src="/beaver_logo.png" alt="Beaver" style={{ width: '28px', height: '28px' }} className="image-container" />
               Beaver Store
             </h2>
             
@@ -888,18 +1016,8 @@ function App() {
                   className={`beaver-option ${selectedBeaver === parseInt(key) ? 'selected' : ''}`}
                   onClick={() => setSelectedBeaver(parseInt(key))}
                 >
-                  <div className="beaver-emoji" style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <img 
-                      src="/beaver_logo.png" 
-                      alt={`${beaver.name} Beaver`} 
-                      style={{ width: '70px', height: '70px' }}
-                    />
-                    {beaver.name === 'Pro' && (
-                      <span style={{ position: 'absolute', top: '-5px', right: '-5px', fontSize: '20px' }}>⭐</span>
-                    )}
-                    {beaver.name === 'Degen' && (
-                      <span style={{ position: 'absolute', top: '-5px', right: '-5px', fontSize: '20px' }}>💎</span>
-                    )}
+                  <div className="beaver-emoji">
+                    <BeaverImage beaverType={parseInt(key)} size="70px" />
                   </div>
                   <div className="beaver-name">{beaver.name}</div>
                   <div className="beaver-rate">{beaver.rate} $BURR/hour</div>
@@ -924,7 +1042,7 @@ function App() {
           {/* Claim Section */}
           <div className="card">
             <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <img src="/beaver_logo.png" alt="Beaver" style={{ width: '28px', height: '28px' }} />
+              <img src="/beaver_logo.png" alt="Beaver" style={{ width: '28px', height: '28px' }} className="image-container" />
               Claim Rewards
             </h2>
 
@@ -966,7 +1084,7 @@ function App() {
         {hasStaked && beavers.length > 0 && (
           <div className="card">
             <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <img src="/beaver_logo.png" alt="Beaver" style={{ width: '32px', height: '32px' }} />
+              <img src="/beaver_logo.png" alt="Beaver" style={{ width: '32px', height: '32px' }} className="image-container" />
               <span>⛏️</span>
               <span style={{marginLeft: '10px'}}>Your Mining Fleet ({beavers.length} Beavers)</span>
             </h2>
@@ -1036,7 +1154,7 @@ function App() {
       {/* Rewards Information Table */}
       <div className="card" style={{margin: '40px auto', maxWidth: '1200px'}}>
         <h2 style={{textAlign: 'center', marginBottom: '30px'}}>
-          📊 Beaver Earnings & Costs Guide
+          Beaver Earnings & Costs Guide
         </h2>
         
         {/* Hourly Earnings Table */}
@@ -1065,7 +1183,7 @@ function App() {
               <tbody>
                 <tr style={{borderBottom: '1px solid var(--border-color)'}}>
                   <td style={{padding: '12px', fontWeight: 'bold', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                    <img src="/beaver_logo.png" alt="Beaver" style={{ width: '20px', height: '20px' }} />
+                    <BeaverImage beaverType={1} size="20px" />
                     Noob
                   </td>
                   <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>300</td>
@@ -1076,8 +1194,8 @@ function App() {
                 </tr>
                 <tr style={{borderBottom: '1px solid var(--border-color)'}}>
                   <td style={{padding: '12px', fontWeight: 'bold', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                    <img src="/beaver_logo.png" alt="Beaver" style={{ width: '20px', height: '20px' }} />
-                    ⭐ Pro
+                    <BeaverImage beaverType={2} size="20px" />
+                    Pro
                   </td>
                   <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>750</td>
                   <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>1,125</td>
@@ -1087,8 +1205,8 @@ function App() {
                 </tr>
                 <tr>
                   <td style={{padding: '12px', fontWeight: 'bold', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                    <img src="/beaver_logo.png" alt="Beaver" style={{ width: '20px', height: '20px' }} />
-                    💎 Degen
+                    <BeaverImage beaverType={3} size="20px" />
+                    Degen
                   </td>
                   <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>2,250</td>
                   <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>3,375</td>
@@ -1119,22 +1237,22 @@ function App() {
             <div style={{lineHeight: '1.8'}}>
               <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <img src="/beaver_logo.png" alt="Beaver" style={{ width: '16px', height: '16px' }} />
+                  <BeaverImage beaverType={1} size="16px" />
                   Noob:
                 </span>
                 <strong style={{color: 'var(--accent-orange)'}}>50 $STRK</strong>
               </div>
               <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <img src="/beaver_logo.png" alt="Beaver" style={{ width: '16px', height: '16px' }} />
-                  ⭐ Pro:
+                  <BeaverImage beaverType={2} size="16px" />
+                  Pro:
                 </span>
                 <strong style={{color: 'var(--accent-orange)'}}>120 $STRK</strong>
               </div>
               <div style={{display: 'flex', justifyContent: 'space-between'}}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <img src="/beaver_logo.png" alt="Beaver" style={{ width: '16px', height: '16px' }} />
-                  💎 Degen:
+                  <BeaverImage beaverType={3} size="16px" />
+                  Degen:
                 </span>
                 <strong style={{color: 'var(--accent-orange)'}}>350 $STRK</strong>
               </div>
@@ -1188,22 +1306,22 @@ function App() {
             <div style={{lineHeight: '1.8'}}>
               <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <img src="/beaver_logo.png" alt="Beaver" style={{ width: '16px', height: '16px' }} />
+                  <BeaverImage beaverType={1} size="16px" />
                   Noob:
                 </span>
                 <strong style={{color: 'var(--accent-orange)'}}>200K $BURR</strong>
               </div>
               <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <img src="/beaver_logo.png" alt="Beaver" style={{ width: '16px', height: '16px' }} />
-                  ⭐ Pro:
+                  <BeaverImage beaverType={2} size="16px" />
+                  Pro:
                 </span>
                 <strong style={{color: 'var(--accent-orange)'}}>400K $BURR</strong>
               </div>
               <div style={{display: 'flex', justifyContent: 'space-between'}}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <img src="/beaver_logo.png" alt="Beaver" style={{ width: '16px', height: '16px' }} />
-                  💎 Degen:
+                  <BeaverImage beaverType={3} size="16px" />
+                  Degen:
                 </span>
                 <strong style={{color: 'var(--accent-orange)'}}>1.02M $BURR</strong>
               </div>
@@ -1226,20 +1344,20 @@ function App() {
           <div style={{display: 'flex', justifyContent: 'center', gap: '30px', flexWrap: 'wrap'}}>
             <div>
               <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <img src="/beaver_logo.png" alt="Beaver" style={{ width: '18px', height: '18px' }} />
+                <BeaverImage beaverType={1} size="18px" />
                 Noob:
               </strong> <span style={{fontSize: '1.1rem'}}>36,450 $BURR</span>
             </div>
             <div>
               <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <img src="/beaver_logo.png" alt="Beaver" style={{ width: '18px', height: '18px' }} />
-                ⭐ Pro:
+                <BeaverImage beaverType={2} size="18px" />
+                Pro:
               </strong> <span style={{fontSize: '1.1rem'}}>91,125 $BURR</span>
             </div>
             <div>
               <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <img src="/beaver_logo.png" alt="Beaver" style={{ width: '18px', height: '18px' }} />
-                💎 Degen:
+                <BeaverImage beaverType={3} size="18px" />
+                Degen:
               </strong> <span style={{fontSize: '1.1rem'}}>273,375 $BURR</span>
             </div>
           </div>

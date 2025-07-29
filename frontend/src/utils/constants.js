@@ -1,11 +1,24 @@
 import React from 'react';
 
-// Contract addresses - deployed to Starknet Mainnet
-export const BURR_TOKEN_ADDRESS = "0x054ab4f64c957ef3c134a3bc72f88515a622a13f7300103e817e87757b9bcfb4"; // New BURR token with 2.1B supply
-export const GAME_CONTRACT_ADDRESS = "0x00efeb19c7b1e8ec2a001815a2d3e3de34f6817749feaf1764ccbdccedccdca5"; // New BurrowGame with 1.68B pool
+// Network configuration - Only Mainnet
+export const NETWORKS = {
+  MAINNET: 'mainnet'
+};
 
-// STRK token address (Starknet Mainnet official)
-export const STRK_ADDRESSES = ["0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"]; // Official STRK token mainnet
+// Current network - Mainnet only
+export const CURRENT_NETWORK = NETWORKS.MAINNET;
+
+// Contract addresses - Mainnet
+export const MAINNET_ADDRESSES = {
+  BURR_TOKEN: "0x01bc7c8ce3b8fe74e4870adc2965df850d429048e83fad93f3140f52ecb74add",
+  GAME_CONTRACT: "0x0340b156113539f6f6a82723ca8f79c283a8c1868ecb0b8b815d4491a38b51bc",
+  STRK_TOKEN: "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"
+};
+
+// Export current network addresses (Mainnet only)
+export const BURR_TOKEN_ADDRESS = MAINNET_ADDRESSES.BURR_TOKEN;
+export const GAME_CONTRACT_ADDRESS = MAINNET_ADDRESSES.GAME_CONTRACT;
+export const STRK_ADDRESSES = [MAINNET_ADDRESSES.STRK_TOKEN];
 
 // For legacy support
 export const CONTRACT_ADDRESSES = {
@@ -78,11 +91,12 @@ export const BeaverImage = ({ type, size = "w-16 h-16", isActive = false, showMi
 
   const getBeaverDisplay = () => {
     const animationClass = getAnimationClass();
+    const activeClass = isActive ? "beaver-active" : "";
     
     switch(type?.toUpperCase()) {
       case 'PRO':
         return (
-          <div className={`relative mx-auto ${size}`}>
+          <div className={`relative mx-auto ${size} image-container ${activeClass}`}>
             <img 
               src="/beaver_logo.png" 
               alt="Pro Beaver" 
@@ -98,7 +112,7 @@ export const BeaverImage = ({ type, size = "w-16 h-16", isActive = false, showMi
         );
       case 'DEGEN':
         return (
-          <div className={`relative mx-auto ${size}`}>
+          <div className={`relative mx-auto ${size} image-container ${activeClass}`}>
             <img 
               src="/beaver_logo.png" 
               alt="Degen Beaver" 
@@ -115,7 +129,7 @@ export const BeaverImage = ({ type, size = "w-16 h-16", isActive = false, showMi
       case 'NOOB':
       default:
         return (
-          <div className={`relative mx-auto ${size}`}>
+          <div className={`relative mx-auto ${size} image-container ${activeClass}`}>
             <img 
               src="/beaver_logo.png" 
               alt="Noob Beaver" 

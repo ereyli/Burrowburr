@@ -56,7 +56,7 @@ class ErrorBoundary extends React.Component {
             color: 'white'
           }}>
             <div style={{ fontSize: '2rem', marginBottom: '15px' }}>
-              <img src="/beaver_logo.png" alt="Beaver" style={{ width: '40px', height: '40px' }} />
+              <img src="/beaver_logo.png" alt="Beaver" style={{ width: '40px', height: '40px' }} className="image-container" />
             </div>
             <h3 style={{ color: '#ff6b35', marginBottom: '10px' }}>Wallet Connection Issue</h3>
             <p style={{ marginBottom: '15px' }}>

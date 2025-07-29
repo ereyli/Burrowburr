@@ -34,22 +34,22 @@ const TokenInfo = () => {
   return (
     <div className="card">
       <h2>
-        🪙 $BURR Token Info
+        $BURR Token Info
       </h2>
       
       <div className="grid grid-3">
-        {/* Total Supply */}
+        {/* Max Supply */}
         <div className="info-box">
-          <div className="info-label">Total Supply</div>
+          <div className="info-label">Max Supply</div>
           <div className="info-value orange">
             {isLoading ? "Loading..." : tokenData.totalSupply}
           </div>
           <div style={{color: 'var(--text-light)', fontSize: '0.8rem', marginTop: '5px'}}>$BURR</div>
         </div>
 
-        {/* Circulating Supply */}
+        {/* Minted Supply */}
         <div className="info-box">
-          <div className="info-label">Circulating Supply</div>
+          <div className="info-label">Minted Supply</div>
           <div className="info-value orange">
             {isLoading ? "Loading..." : tokenData.circulatingSupply}
           </div>
@@ -66,12 +66,7 @@ const TokenInfo = () => {
         </div>
       </div>
 
-      {/* Additional Info */}
-      <div style={{textAlign: 'center', marginTop: '15px'}}>
-        <div style={{color: 'var(--text-light)', fontSize: '0.8rem'}}>
-          🔄 Updates every 10 minutes • Built on Starknet
-        </div>
-      </div>
+
     </div>
   );
 };

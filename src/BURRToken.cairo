@@ -17,6 +17,11 @@ pub trait IBURRToken<TContractState> {
     fn revoke_minter(ref self: TContractState, minter: ContractAddress);
     fn is_authorized_minter(self: @TContractState, minter: ContractAddress) -> bool;
     fn owner(self: @TContractState) -> ContractAddress;
+    
+    // camelCase fonksiyonlar - cüzdanlar için gerekli
+    fn totalSupply(self: @TContractState) -> u256;
+    fn balanceOf(self: @TContractState, account: ContractAddress) -> u256;
+    fn transferFrom(ref self: TContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256) -> bool;
 }
 
 #[starknet::contract]
@@ -85,7 +90,7 @@ pub mod BURRToken {
         self.decimals.write(18);
         self.total_supply.write(0);
         self.owner.write(owner);
-        self.total_supply_cap.write(1000000000_000000000000000000); // 1 billion BURR
+        self.total_supply_cap.write(2100000000_000000000000000000); // 2.1 billion BURR
         
         // Authorize owner as initial minter
         self.authorized_minters.entry(owner).write(true);
@@ -212,6 +217,18 @@ pub mod BURRToken {
         
         fn owner(self: @ContractState) -> ContractAddress {
             self.owner.read()
+        }
+        
+        fn totalSupply(self: @ContractState) -> u256 {
+            self.total_supply()
+        }
+        
+        fn balanceOf(self: @ContractState, account: ContractAddress) -> u256 {
+            self.balance_of(account)
+        }
+        
+        fn transferFrom(ref self: ContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256) -> bool {
+            self.transfer_from(sender, recipient, amount)
         }
     }
     

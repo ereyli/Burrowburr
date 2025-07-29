@@ -1,6 +1,15 @@
 import React from 'react';
+import { CURRENT_NETWORK, NETWORKS } from '../utils/constants.js';
 
 const Header = ({ isConnected, onConnect }) => {
+  const getNetworkColor = () => {
+    return CURRENT_NETWORK === NETWORKS.MAINNET ? 'text-green-400' : 'text-yellow-400';
+  };
+
+  const getNetworkIcon = () => {
+    return CURRENT_NETWORK === NETWORKS.MAINNET ? '●' : '●';
+  };
+
   return (
     <header className="bg-burrow-dark border-b-2 border-burrow-brown p-3">
       <div className="max-w-5xl flex items-center justify-between">
@@ -14,6 +23,13 @@ const Header = ({ isConnected, onConnect }) => {
           <h1 className="text-2xl font-bold text-burrow-orange font-comic">
             Burrow
           </h1>
+          {/* Network Indicator */}
+          <div className={`flex items-center space-x-1 px-2 py-1 rounded-full bg-gray-800 ${getNetworkColor()}`}>
+            <span className="text-xs">{getNetworkIcon()}</span>
+            <span className="text-xs font-semibold uppercase">
+              {CURRENT_NETWORK}
+            </span>
+          </div>
         </div>
 
         {/* Action Buttons */}
@@ -32,7 +48,7 @@ const Header = ({ isConnected, onConnect }) => {
             className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-2 px-4 rounded-lg cursor-pointer text-sm transition-all duration-300 hover:scale-105 shadow-lg"
             style={{border: 'none'}}
           >
-            💰 Buy $BURR
+            Buy $BURR
           </button>
 
           {/* Wallet Connection */}

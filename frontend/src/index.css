@@ -419,9 +419,10 @@ body {
 }
 
 .beaver-emoji {
-  font-size: 3rem;
   margin-bottom: 10px;
-  display: block;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .beaver-name {
@@ -736,4 +737,200 @@ html, body, #root {
 .contract-address:hover {
   background: rgba(255, 180, 71, 0.3) !important;
   transform: scale(1.02) !important;
+}
+
+/* Beaver Image Styling - Softer backgrounds */
+.beaver-image {
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  padding: 3px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.beaver-image img {
+  border-radius: 45%;
+  filter: contrast(0.9) saturate(0.85) brightness(1.05);
+  transition: filter 0.3s ease;
+}
+
+.beaver-image:hover {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
+  transform: scale(1.02);
+}
+
+.beaver-image:hover img {
+  filter: contrast(1) saturate(1) brightness(1.1);
+}
+
+/* Alternative: Remove harsh backgrounds and soften edges */
+.beaver-image-clean {
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3)) 
+          contrast(0.9) 
+          saturate(0.85) 
+          brightness(1.05);
+  border-radius: 8px;
+  transition: filter 0.3s ease;
+}
+
+.beaver-image-clean:hover {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4)) 
+          contrast(1) 
+          saturate(1) 
+          brightness(1.1);
+}
+
+/* Gradient overlay to soften backgrounds */
+.beaver-image-overlay {
+  overflow: hidden;
+  transition: transform 0.3s ease;
+}
+
+.beaver-image-overlay img {
+  filter: contrast(0.85) saturate(0.8) brightness(1.1);
+  transition: filter 0.3s ease;
+}
+
+.beaver-image-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(0, 0, 0, 0.05));
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.beaver-image-overlay:hover {
+  transform: scale(1.05);
+}
+
+.beaver-image-overlay:hover img {
+  filter: contrast(1) saturate(1) brightness(1.2);
+}
+
+/* Enhanced soft background for all images */
+img {
+  border-radius: 8px;
+  filter: contrast(0.95) saturate(0.9) brightness(1.02);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+img:hover {
+  filter: contrast(1) saturate(1) brightness(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: scale(1.02);
+}
+
+/* Soft background containers for images */
+.image-container {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.05));
+  border-radius: 12px;
+  padding: 8px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.image-container:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(0, 0, 0, 0.08));
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Specific styling for beaver logo images */
+img[src*="beaver_logo.png"],
+img[src*="beaver.png"] {
+  background: linear-gradient(135deg, rgba(139, 69, 19, 0.2), rgba(255, 140, 0, 0.1));
+  border-radius: 50%;
+  padding: 4px;
+  filter: contrast(0.9) saturate(0.85) brightness(1.05);
+  transition: all 0.3s ease;
+}
+
+img[src*="beaver_logo.png"]:hover,
+img[src*="beaver.png"]:hover {
+  background: linear-gradient(135deg, rgba(139, 69, 19, 0.3), rgba(255, 140, 0, 0.2));
+  filter: contrast(1) saturate(1) brightness(1.1);
+  transform: scale(1.05);
+}
+
+/* Soft background for game character images */
+img[src*="noob.png"],
+img[src*="pro.png"],
+img[src*="degen.png"] {
+  background: linear-gradient(135deg, rgba(70, 130, 180, 0.2), rgba(255, 140, 0, 0.1));
+  border-radius: 12px;
+  padding: 6px;
+  filter: contrast(0.9) saturate(0.85) brightness(1.05);
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+img[src*="noob.png"]:hover,
+img[src*="pro.png"]:hover,
+img[src*="degen.png"]:hover {
+  background: linear-gradient(135deg, rgba(70, 130, 180, 0.3), rgba(255, 140, 0, 0.2));
+  filter: contrast(1) saturate(1) brightness(1.1);
+  transform: scale(1.05);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Soft glow effect for active beavers */
+.beaver-active {
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.3), rgba(50, 205, 50, 0.2));
+  border-radius: 50%;
+  padding: 6px;
+  box-shadow: 0 0 20px rgba(255, 140, 0, 0.4);
+  animation: soft-glow 2s ease-in-out infinite;
+}
+
+@keyframes soft-glow {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(255, 140, 0, 0.4);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 0 30px rgba(255, 140, 0, 0.6);
+    transform: scale(1.02);
+  }
+}
+
+/* Container styling for better image integration */
+.beaver-card img,
+.card img {
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.05));
+  padding: 4px;
+  filter: contrast(0.95) saturate(0.9) brightness(1.02);
+  transition: all 0.3s ease;
+}
+
+.beaver-card:hover img,
+.card:hover img {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(0, 0, 0, 0.08));
+  filter: contrast(1) saturate(1) brightness(1.05);
+  transform: scale(1.02);
+}
+
+/* Header logo styling */
+.logo img {
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.2), rgba(139, 69, 19, 0.1));
+  padding: 3px;
+  filter: contrast(0.9) saturate(0.85) brightness(1.05);
+  transition: all 0.3s ease;
+}
+
+.logo:hover img {
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.3), rgba(139, 69, 19, 0.2));
+  filter: contrast(1) saturate(1) brightness(1.1);
+  transform: scale(1.05);
 }

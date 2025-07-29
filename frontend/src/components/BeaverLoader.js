@@ -4,7 +4,7 @@ const BeaverLoader = ({ message = "Loading..." }) => {
   return (
     <div className="flex flex-col items-center justify-center p-8 space-y-4">
       {/* Animated Beaver */}
-      <div className="relative">
+      <div className="relative image-container">
         <img 
           src="/beaver_logo.png" 
           alt="Loading Beaver" 

@@ -61,8 +61,8 @@ src/
 
 ## Contracts (Starknet Mainnet)
 
-- **BURR Token**: `0x04553dfcd5b26cdc529b684627db845517a2d47f20a9101f59479c4bf9d91e4e`
-- **Burrow Game**: `0x05c2320a3dea383f35a174ffc098a289edf89067e84701f0c778ed5e37c1cc1e`
+- **BURR Token**: `0x01bc7c8ce3b8fe74e4870adc2965df850d429048e83fad93f3140f52ecb74add`
+- **Burrow Game**: `0x0340b156113539f6f6a82723ca8f79c283a8c1868ecb0b8b815d4491a38b51bc`
 - **STRK Token**: `0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d`
 
 ## Technology Stack
