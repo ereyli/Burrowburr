@@ -11,7 +11,7 @@ if (typeof BigInt === 'undefined') {
 
 // RPC URLs for different networks
 const RPC_URLS = {
-    [NETWORKS.MAINNET]: "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_8/EXk1VtDVCaeNBRAWsi7WA"
+    [NETWORKS.MAINNET]: process.env.REACT_APP_ALCHEMY_RPC_URL || "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_8/YOUR_API_KEY_HERE"
 };
 
 // Get current network RPC URL
