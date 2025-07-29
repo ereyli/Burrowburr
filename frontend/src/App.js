@@ -1370,7 +1370,7 @@ function App() {
             padding: '20px 0',
             borderTop: '1px solid rgba(255, 180, 71, 0.2)'
           }}>
-            © 2025 BurrowGame. Built with ❤️ for the meme mining community on Starknet.
+            © 2025 BurrowBurr. Built with ❤️ for the meme mining community on Starknet.
           </div>
         </div>
       </footer>
