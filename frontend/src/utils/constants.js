@@ -143,7 +143,7 @@ export const BEAVER_DESCRIPTIONS = {
 // Social links
 export const SOCIAL_LINKS = {
   twitter: "https://x.com/burr_burrow",
-  dexscreener: "https://dexscreener.com/starknet/burr"
+  dexscreener: ""
 };
 
 // Utility functions
