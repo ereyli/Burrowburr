@@ -1076,12 +1076,12 @@ export async function fetchPlayerInfo(address) {
                 // we can trust they belong to the user and fetch details directly
                 let beaverDetails;
                 
-                // Use direct storage access to bypass ownership checks
+                // Use get_beaver with the user's address (since IDs come from get_user_beavers, we know they belong to user)
                 try {
                     const result = await provider.callContract({
                         contractAddress: GAME_CONTRACT_ADDRESS,
-                        entrypoint: 'beavers',
-                        calldata: [beaverId.toString()]
+                        entrypoint: 'get_beaver',
+                        calldata: [formattedAddress, beaverId.toString()]
                     });
                     
                     console.log(`📋 Manual beaver ${beaverId} result:`, result.result);
