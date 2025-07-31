@@ -1039,7 +1039,22 @@ export async function fetchPlayerInfo(address) {
         console.log("📋 Number of beavers found:", beaverIds.length);
         
         if (!beaverIds || beaverIds.length === 0) {
-            console.log("📋 No beavers found for user");
+            console.log("📋 No beavers found for user - might not be imported yet");
+            
+            // Check if user has pending rewards (indicates they had beavers before)
+            const totalPendingRewards = await gameContract.calculate_pending_rewards(formattedAddress);
+            const totalPendingBigInt = safeBalanceConvert(totalPendingRewards);
+            
+            if (totalPendingBigInt > 0) {
+                console.log("📋 User has pending rewards but no visible beavers - import may be incomplete");
+                return { 
+                    beavers: [], 
+                    totalRewards: totalPendingBigInt,
+                    importStatus: 'incomplete',
+                    message: 'Your beavers are being imported. Please check back in a few minutes.'
+                };
+            }
+            
             return { beavers: [], totalRewards: BigInt(0) };
         }
         
