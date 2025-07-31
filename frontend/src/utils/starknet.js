@@ -937,7 +937,15 @@ export async function fetchPlayerInfo(address) {
                         }
                     } catch (manualError) {
                         console.error(`❌ Manual beaver ${beaverId} error:`, manualError);
+                        // Skip this beaver if it's not owned by the user
+                        continue;
                     }
+                }
+                
+                // Verify that the beaver belongs to the user
+                if (beaver.owner !== formattedAddress) {
+                    console.log(`📋 Beaver ${beaverId} belongs to ${beaver.owner}, not ${formattedAddress}, skipping...`);
+                    continue;
                 }
                 
                 // Calculate hourly rate for this beaver
@@ -955,6 +963,8 @@ export async function fetchPlayerInfo(address) {
                 
             } catch (error) {
                 console.error(`❌ Error fetching beaver ${beaverId}:`, error);
+                // Skip this beaver if there's an error (likely "Not beaver owner")
+                continue;
             }
         }
         
