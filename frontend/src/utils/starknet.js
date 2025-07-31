@@ -795,18 +795,26 @@ export async function fetchPlayerInfo(address) {
         // Parse the result - handle different response formats
         let beaverIds = [];
         
-        // Case 1: Direct array response
+        console.log("📋 Manual result type:", typeof manualResult);
+        console.log("📋 Manual result keys:", manualResult ? Object.keys(manualResult) : 'null');
+        
+        // Case 1: Direct array response (most common for felt*)
         if (Array.isArray(manualResult)) {
+            console.log("📋 Processing as array");
             beaverIds = manualResult.map(id => {
                 // Convert hex string to number
                 if (typeof id === 'string') {
-                    return parseInt(id, 16);
+                    const numValue = parseInt(id, 16);
+                    console.log(`📋 Converting string ${id} to number ${numValue}`);
+                    return numValue;
                 }
+                console.log(`📋 Using number directly: ${id}`);
                 return Number(id);
             }).filter(id => id > 0); // Filter out 0 which means no beaver
         }
         // Case 2: Object with beaver_ids property
         else if (manualResult && manualResult.beaver_ids) {
+            console.log("📋 Processing as object with beaver_ids");
             if (Array.isArray(manualResult.beaver_ids)) {
                 beaverIds = manualResult.beaver_ids.map(id => {
                     if (typeof id === 'string') {
@@ -816,19 +824,43 @@ export async function fetchPlayerInfo(address) {
                 }).filter(id => id > 0);
             }
         }
-        // Case 3: Single value response
+        // Case 3: Object with numeric keys (felt* format)
         else if (manualResult && typeof manualResult === 'object') {
+            console.log("📋 Processing as object with numeric keys");
             // Try to extract numeric values from object
             for (let key in manualResult) {
                 const value = manualResult[key];
+                console.log(`📋 Key: ${key}, Value: ${value}, Type: ${typeof value}`);
+                
                 if (typeof value === 'string' && /^[0-9a-fA-F]+$/.test(value)) {
                     const numValue = parseInt(value, 16);
+                    console.log(`📋 Converting hex string ${value} to number ${numValue}`);
                     if (numValue > 0) {
                         beaverIds.push(numValue);
                     }
                 } else if (typeof value === 'number' && value > 0) {
+                    console.log(`📋 Adding number directly: ${value}`);
                     beaverIds.push(value);
+                } else if (typeof value === 'string' && /^\d+$/.test(value)) {
+                    const numValue = parseInt(value, 10);
+                    console.log(`📋 Converting decimal string ${value} to number ${numValue}`);
+                    if (numValue > 0) {
+                        beaverIds.push(numValue);
+                    }
                 }
+            }
+        }
+        // Case 4: Single value (if only one beaver)
+        else if (manualResult && (typeof manualResult === 'string' || typeof manualResult === 'number')) {
+            console.log("📋 Processing as single value");
+            let numValue;
+            if (typeof manualResult === 'string') {
+                numValue = parseInt(manualResult, 16);
+            } else {
+                numValue = Number(manualResult);
+            }
+            if (numValue > 0) {
+                beaverIds.push(numValue);
             }
         }
         
