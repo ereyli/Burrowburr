@@ -929,8 +929,15 @@ export async function fetchPlayerInfo(address) {
                         }
                     } catch (manualError) {
                         console.error(`❌ Manual beaver ${beaverId} error:`, manualError);
-                        // Don't throw, just skip this beaver
-                        continue;
+                        // Use default values for failed beavers
+                        beaverDetails = {
+                            id: beaverId,
+                            beaver_type: 0,
+                            level: 1,
+                            last_claim_time: 0,
+                            owner: formattedAddress
+                        };
+                        console.log(`📋 Using default values for beaver ${beaverId}:`, beaverDetails);
                     }
                 }
                 
@@ -981,11 +988,8 @@ export async function fetchPlayerInfo(address) {
                     }
                 }
                 
-                // Skip owner verification for now since all beavers belong to the user
-                // if (beaver.owner && beaver.owner !== formattedAddress) {
-                //     console.log(`📋 Beaver ${beaverId} belongs to ${beaver.owner}, not ${formattedAddress}, skipping...`);
-                //     continue;
-                // }
+                // Add beaver to the list regardless of owner for now
+                console.log(`📋 Adding beaver ${beaverId} to list`);
                 
                 // Calculate hourly rate for this beaver
                 const baseRates = [0, 300, 750, 2250]; // Index 0 unused, 1=Noob, 2=Pro, 3=Degen
