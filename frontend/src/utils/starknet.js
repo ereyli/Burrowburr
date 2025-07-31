@@ -1078,6 +1078,16 @@ export async function fetchPlayerInfo(address) {
                 
                 // Since get_user_beavers returns these IDs, they must belong to this user
                 // But there might be an address normalization issue - try different address formats
+                
+                // Define normalizeAddress function inline
+                const normalizeAddress = (addr) => {
+                    if (!addr || typeof addr !== 'string') return '';
+                    // Remove 0x prefix, add leading zeros to make 64 chars, then add 0x back
+                    const cleaned = addr.replace('0x', '').toLowerCase();
+                    const padded = cleaned.padStart(64, '0');
+                    return '0x' + padded;
+                };
+                
                 let result = null;
                 let addressesToTry = [
                     formattedAddress,
