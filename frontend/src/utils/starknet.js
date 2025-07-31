@@ -1168,11 +1168,26 @@ export async function fetchPlayerInfo(address) {
                     }
                 }
                 
-                // Verify beaver ownership - but be more flexible
+                // Verify beaver ownership - normalize addresses for comparison
                 const beaverOwner = beaver.owner || '';
-                const isOwnedByUser = beaverOwner === formattedAddress || beaverOwner === '' || !beaverOwner;
+                
+                // Normalize addresses by ensuring they are 66 characters long (0x + 64 hex chars)
+                const normalizeAddress = (addr) => {
+                    if (!addr || typeof addr !== 'string') return '';
+                    
+                    // Remove 0x prefix, add leading zeros to make 64 chars, then add 0x back
+                    const cleaned = addr.replace('0x', '').toLowerCase();
+                    const padded = cleaned.padStart(64, '0');
+                    return '0x' + padded;
+                };
+                
+                const normalizedBeaverOwner = normalizeAddress(beaverOwner);
+                const normalizedUserAddress = normalizeAddress(formattedAddress);
+                
+                const isOwnedByUser = normalizedBeaverOwner === normalizedUserAddress || beaverOwner === '' || !beaverOwner;
                 
                 console.log(`📋 Beaver ${beaverId} owner: ${beaverOwner}, User: ${formattedAddress}, IsOwned: ${isOwnedByUser}`);
+                console.log(`📋 Normalized - Beaver: ${normalizedBeaverOwner}, User: ${normalizedUserAddress}`);
                 
                 if (!isOwnedByUser) {
                     console.log(`📋 Skipping beaver ${beaverId} - not owned by user`);
