@@ -792,8 +792,10 @@ export async function fetchPlayerInfo(address) {
 
         console.log("📋 Raw manual result:", manualResult);
 
-        // Use manual call result since Contract class parsing has issues with felt* arrays
+        // Parse the result - handle different response formats
         let beaverIds = [];
+        
+        // Case 1: Direct array response
         if (Array.isArray(manualResult)) {
             beaverIds = manualResult.map(id => {
                 // Convert hex string to number
@@ -802,6 +804,32 @@ export async function fetchPlayerInfo(address) {
                 }
                 return Number(id);
             }).filter(id => id > 0); // Filter out 0 which means no beaver
+        }
+        // Case 2: Object with beaver_ids property
+        else if (manualResult && manualResult.beaver_ids) {
+            if (Array.isArray(manualResult.beaver_ids)) {
+                beaverIds = manualResult.beaver_ids.map(id => {
+                    if (typeof id === 'string') {
+                        return parseInt(id, 16);
+                    }
+                    return Number(id);
+                }).filter(id => id > 0);
+            }
+        }
+        // Case 3: Single value response
+        else if (manualResult && typeof manualResult === 'object') {
+            // Try to extract numeric values from object
+            for (let key in manualResult) {
+                const value = manualResult[key];
+                if (typeof value === 'string' && /^[0-9a-fA-F]+$/.test(value)) {
+                    const numValue = parseInt(value, 16);
+                    if (numValue > 0) {
+                        beaverIds.push(numValue);
+                    }
+                } else if (typeof value === 'number' && value > 0) {
+                    beaverIds.push(value);
+                }
+            }
         }
         
         console.log("📋 Parsed beaver IDs:", beaverIds);
@@ -835,14 +863,50 @@ export async function fetchPlayerInfo(address) {
                 
                 console.log(`📋 Beaver ${beaverId} details:`, beaverDetails);
                 
-                const beaver = {
+                // Handle different response formats
+                let beaver = {
                     id: Number(beaverId),
-                    owner: beaverDetails.owner,
-                    type: Number(beaverDetails.beaver_type),
-                    level: Number(beaverDetails.level),
-                    last_claim_time: Number(beaverDetails.last_claim_time),
+                    owner: '',
+                    type: 0,
+                    level: 1,
+                    last_claim_time: 0,
                     pendingRewards: BigInt(0) // Will calculate proportionally below
                 };
+                
+                // Case 1: Direct object response
+                if (beaverDetails && typeof beaverDetails === 'object') {
+                    beaver.owner = beaverDetails.owner || '';
+                    beaver.type = Number(beaverDetails.beaver_type || 0);
+                    beaver.level = Number(beaverDetails.level || 1);
+                    beaver.last_claim_time = Number(beaverDetails.last_claim_time || 0);
+                }
+                // Case 2: Array response [id, type, level, last_claim_time, owner]
+                else if (Array.isArray(beaverDetails) && beaverDetails.length >= 5) {
+                    beaver.type = Number(beaverDetails[1] || 0);
+                    beaver.level = Number(beaverDetails[2] || 1);
+                    beaver.last_claim_time = Number(beaverDetails[3] || 0);
+                    beaver.owner = beaverDetails[4] || '';
+                }
+                // Case 3: Manual call if contract method fails
+                else {
+                    try {
+                        const manualBeaverResult = await provider.callContract({
+                            contractAddress: GAME_CONTRACT_ADDRESS,
+                            entrypoint: 'get_beaver',
+                            calldata: [formattedAddress, beaverId.toString()]
+                        });
+                        console.log(`📋 Manual beaver ${beaverId} result:`, manualBeaverResult);
+                        
+                        if (Array.isArray(manualBeaverResult) && manualBeaverResult.length >= 5) {
+                            beaver.type = Number(manualBeaverResult[1] || 0);
+                            beaver.level = Number(manualBeaverResult[2] || 1);
+                            beaver.last_claim_time = Number(manualBeaverResult[3] || 0);
+                            beaver.owner = manualBeaverResult[4] || '';
+                        }
+                    } catch (manualError) {
+                        console.error(`❌ Manual beaver ${beaverId} error:`, manualError);
+                    }
+                }
                 
                 // Calculate hourly rate for this beaver
                 const baseRates = [0, 300, 750, 2250]; // Index 0 unused, 1=Noob, 2=Pro, 3=Degen
