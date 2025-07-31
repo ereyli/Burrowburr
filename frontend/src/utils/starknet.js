@@ -1115,6 +1115,7 @@ export async function fetchPlayerInfo(address) {
                             calldata: [addressToTry, beaverId.toString()]
                         });
                         console.log(`📋 Success with address format: ${addressToTry}`);
+                        console.log(`📋 Raw result for beaver ${beaverId}:`, result);
                         break; // Success, exit loop
                     } catch (tryError) {
                         console.log(`📋 Failed with address ${addressToTry}:`, tryError.message);
@@ -1130,9 +1131,13 @@ export async function fetchPlayerInfo(address) {
                 try {
                     
                     console.log(`📋 Manual beaver ${beaverId} result:`, result.result);
+                    console.log(`📋 Manual beaver ${beaverId} full result:`, result);
                     
-                    if (result.result && result.result.length >= 5) {
-                        const [id, beaver_type, level, last_claim_time, owner] = result.result;
+                    // Handle different response formats - sometimes it's result.result, sometimes direct
+                    let resultData = result.result || result;
+                    
+                    if (resultData && resultData.length >= 5) {
+                        const [id, beaver_type, level, last_claim_time, owner] = resultData;
                         
                         // Parse the values - handle both hex and decimal
                         let parsedId, parsedType, parsedLevel, parsedLastClaim;
@@ -1227,6 +1232,8 @@ export async function fetchPlayerInfo(address) {
                         });
                     } else {
                         console.log(`📋 Invalid manual result for beaver ${beaverId}:`, result.result);
+                        console.log(`📋 ResultData length:`, resultData ? resultData.length : 'undefined');
+                        console.log(`📋 ResultData:`, resultData);
                     }
                 } catch (manualError) {
                     console.error(`❌ Manual beaver ${beaverId} error:`, manualError);
