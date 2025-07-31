@@ -54,22 +54,34 @@ export const GAME_CONFIG = {
   GAME_DURATION_DAYS: 365
 };
 
-// Updated upgrade costs based on new economics
+// Updated upgrade costs based on new economics - MATCHING CONTRACT LOGIC
 export const UPGRADE_COSTS = {
+  // Level 1->2: Same cost for all types
   1: {
-    cost: 40000, // 40k BURR for level 2
+    noob: 40000,    // 40k BURR
+    pro: 80000,     // 80k BURR  
+    degen: 203000,  // 203k BURR
     canUpgrade: true
   },
+  // Level 2->3: Same cost for all types
   2: {
-    cost: 84000, // 84k BURR for level 3
+    noob: 40000,    // 40k BURR
+    pro: 80000,     // 80k BURR
+    degen: 203000,  // 203k BURR
     canUpgrade: true
   },
+  // Level 3->4: Double cost for all types
   3: {
-    cost: 160000, // Updated to new Pro upgrade cost
+    noob: 80000,    // 80k BURR (40k * 2)
+    pro: 160000,    // 160k BURR (80k * 2)
+    degen: 406000,  // 406k BURR (203k * 2)
     canUpgrade: true
   },
+  // Level 4->5: Double cost for all types
   4: {
-    cost: 160000, // Updated to new Pro upgrade cost
+    noob: 80000,    // 80k BURR (40k * 2)
+    pro: 160000,    // 160k BURR (80k * 2)
+    degen: 406000,  // 406k BURR (203k * 2)
     canUpgrade: true
   }
 };
