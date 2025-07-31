@@ -902,14 +902,22 @@ export async function fetchPlayerInfo(address) {
         
         console.log("📋 Formatted address:", formattedAddress);
         
-        // Manual contract call to test
-        const manualResult = await provider.callContract({
-            contractAddress: GAME_CONTRACT_ADDRESS,
-            entrypoint: 'get_user_beavers',
-            calldata: [formattedAddress]
-        });
-
-        console.log("📋 Raw manual result:", manualResult);
+        // Try contract method first, fallback to manual call
+        let manualResult;
+        try {
+            console.log("📋 Trying contract method get_user_beavers...");
+            manualResult = await gameContract.get_user_beavers(formattedAddress);
+            console.log("📋 Contract method result:", manualResult);
+        } catch (contractError) {
+            console.log("📋 Contract method failed, trying manual call...", contractError.message);
+            // Fallback to manual contract call
+            manualResult = await provider.callContract({
+                contractAddress: GAME_CONTRACT_ADDRESS,
+                entrypoint: 'get_user_beavers',
+                calldata: [formattedAddress]
+            });
+            console.log("📋 Manual call result:", manualResult);
+        }
 
         // Parse the result - handle different response formats
         let beaverIds = [];
@@ -921,7 +929,7 @@ export async function fetchPlayerInfo(address) {
         if (Array.isArray(manualResult)) {
             console.log("📋 Processing as array");
             beaverIds = manualResult.map(id => {
-                // Convert string to number - try hex first, then decimal
+                // Handle different data types: string, number, BigInt
                 if (typeof id === 'string') {
                     let numValue;
                     // If it starts with 0x, it's hex
@@ -937,9 +945,14 @@ export async function fetchPlayerInfo(address) {
                     }
                     console.log(`📋 Converting string ${id} to number ${numValue}`);
                     return numValue;
+                } else if (typeof id === 'bigint') {
+                    const numValue = Number(id);
+                    console.log(`📋 Converting BigInt ${id} to number ${numValue}`);
+                    return numValue;
+                } else {
+                    console.log(`📋 Using number directly: ${id}`);
+                    return Number(id);
                 }
-                console.log(`📋 Using number directly: ${id}`);
-                return Number(id);
             }).filter(id => id > 0); // Filter out 0 which means no beaver
         }
         // Case 2: Object with beaver_ids property
