@@ -991,11 +991,15 @@ export async function fetchPlayerInfo(address) {
                 // Add beaver to the list regardless of owner for now
                 console.log(`📋 Adding beaver ${beaverId} to list`);
                 
-                // Calculate hourly rate for this beaver
-                const baseRates = [0, 300, 750, 2250]; // Index 0 unused, 1=Noob, 2=Pro, 3=Degen
+                // Calculate hourly rate for this beaver (matching contract logic)
+                const baseRates = [300, 750, 2250]; // Noob=0, Pro=1, Degen=2
                 const baseRate = baseRates[beaver.type] || 300;
-                const levelMultiplier = Math.pow(1.5, beaver.level - 1);
-                const hourlyRate = baseRate * levelMultiplier;
+                
+                // Level multipliers matching contract (basis points)
+                const levelMultipliers = [1000, 1500, 2250, 3375, 5062]; // Level 1-5
+                const levelMultiplier = levelMultipliers[beaver.level - 1] || 1000;
+                
+                const hourlyRate = (baseRate * levelMultiplier) / 1000; // Convert from basis points
                 totalHourlyRate += hourlyRate;
                 
                 beaver.hourlyRate = hourlyRate;
