@@ -1,5 +1,5 @@
 import React from 'react';
-import { GAME_CONFIG, formatNumber } from '../utils/constants';
+import { GAME_CONFIG, UPGRADE_COSTS, formatNumber } from '../utils/constants';
 
 const UpgradePanel = ({ hasStaked, beaverInfo, upgradeInfo, onUpgrade }) => {
   if (!hasStaked) {
@@ -17,7 +17,18 @@ const UpgradePanel = ({ hasStaked, beaverInfo, upgradeInfo, onUpgrade }) => {
 
   const currentLevel = beaverInfo?.level || 1;
   const nextLevel = currentLevel + 1;
-  const upgradeCost = GAME_CONFIG.UPGRADE_COSTS[currentLevel] || 0;
+  
+  // Get upgrade cost based on beaver type
+  const getUpgradeCost = () => {
+    const levelCosts = UPGRADE_COSTS[currentLevel];
+    if (!levelCosts) return 0;
+    
+    // Map beaver type to cost
+    const beaverType = beaverInfo?.type?.toLowerCase() || 'noob';
+    return levelCosts[beaverType] || levelCosts.noob || 0;
+  };
+  
+  const upgradeCost = getUpgradeCost();
   const canUpgrade = currentLevel < 5 && upgradeInfo?.canUpgrade;
   const isMaxLevel = currentLevel >= 5;
 
