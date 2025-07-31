@@ -891,9 +891,39 @@ export async function fetchPlayerInfo(address) {
                 console.log(`📋 Fetching details for beaver ${beaverId}...`);
                 
                 // Get beaver details - pass address and beaver_id
-                const beaverDetails = await gameContract.get_beaver(formattedAddress, beaverId);
-                
-                console.log(`📋 Beaver ${beaverId} details:`, beaverDetails);
+                let beaverDetails;
+                try {
+                    beaverDetails = await gameContract.get_beaver(formattedAddress, beaverId);
+                    console.log(`📋 Beaver ${beaverId} details (contract method):`, beaverDetails);
+                } catch (contractError) {
+                    console.log(`📋 Contract method failed for beaver ${beaverId}, trying manual call...`);
+                    
+                    // Try manual call
+                    try {
+                        const manualBeaverResult = await provider.callContract({
+                            contractAddress: GAME_CONTRACT_ADDRESS,
+                            entrypoint: 'get_beaver',
+                            calldata: [formattedAddress, beaverId.toString()]
+                        });
+                        console.log(`📋 Manual beaver ${beaverId} result:`, manualBeaverResult);
+                        
+                        // Convert manual result to expected format
+                        if (Array.isArray(manualBeaverResult) && manualBeaverResult.length >= 5) {
+                            beaverDetails = {
+                                id: manualBeaverResult[0],
+                                beaver_type: manualBeaverResult[1],
+                                level: manualBeaverResult[2],
+                                last_claim_time: manualBeaverResult[3],
+                                owner: manualBeaverResult[4]
+                            };
+                        } else {
+                            throw new Error('Invalid manual result format');
+                        }
+                    } catch (manualError) {
+                        console.error(`❌ Manual beaver ${beaverId} error:`, manualError);
+                        throw manualError;
+                    }
+                }
                 
                 // Handle different response formats
                 let beaver = {
@@ -942,8 +972,8 @@ export async function fetchPlayerInfo(address) {
                     }
                 }
                 
-                // Verify that the beaver belongs to the user
-                if (beaver.owner !== formattedAddress) {
+                // Verify that the beaver belongs to the user (but don't skip if owner is empty)
+                if (beaver.owner && beaver.owner !== formattedAddress) {
                     console.log(`📋 Beaver ${beaverId} belongs to ${beaver.owner}, not ${formattedAddress}, skipping...`);
                     continue;
                 }
