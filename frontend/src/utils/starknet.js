@@ -1051,7 +1051,7 @@ export async function fetchPlayerInfo(address) {
                     beavers: [], 
                     totalRewards: totalPendingBigInt,
                     importStatus: 'incomplete',
-                    message: 'Your beavers are being imported. Please check back in a few minutes.'
+                    message: 'Your beavers are being imported to the new contract. This may take some time. Please check back later or contact support if the issue persists.'
                 };
             }
             
