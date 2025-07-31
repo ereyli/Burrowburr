@@ -906,6 +906,12 @@ export async function fetchPlayerInfo(address) {
                 } catch (contractError) {
                     console.log(`📋 Contract method failed for beaver ${beaverId}, trying manual call...`);
                     
+                    // Check if it's a "Not beaver owner" error from contract method
+                    if (contractError.message && contractError.message.includes('Not beaver owner')) {
+                        console.log(`📋 Skipping beaver ${beaverId} - not owned by user (from contract method)`);
+                        continue; // Skip this beaver entirely
+                    }
+                    
                     // Try manual call
                     try {
                         const manualBeaverResult = await provider.callContract({
@@ -937,7 +943,14 @@ export async function fetchPlayerInfo(address) {
                         }
                     } catch (manualError) {
                         console.error(`❌ Manual beaver ${beaverId} error:`, manualError);
-                        // Use default values for failed beavers
+                        
+                        // Check if it's a "Not beaver owner" error
+                        if (manualError.message && manualError.message.includes('Not beaver owner')) {
+                            console.log(`📋 Skipping beaver ${beaverId} - not owned by user (from manual call)`);
+                            continue; // Skip this beaver entirely
+                        }
+                        
+                        // Use default values only for other types of errors
                         beaverDetails = {
                             id: beaverId,
                             beaver_type: 0,
