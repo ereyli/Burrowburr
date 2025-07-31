@@ -11,7 +11,7 @@ if (typeof BigInt === 'undefined') {
 
 // RPC URLs for different networks
 const RPC_URLS = {
-    [NETWORKS.MAINNET]: process.env.REACT_APP_ALCHEMY_RPC_URL || "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_8/YOUR_API_KEY_HERE"
+    [NETWORKS.MAINNET]: process.env.REACT_APP_ALCHEMY_RPC_URL || "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_8/EXk1VtDVCaeNBRAWsi7WA"
 };
 
 // Get current network RPC URL
@@ -147,6 +147,60 @@ const GAME_ABI = [
         "inputs": [],
         "outputs": [{"name": "total_burned", "type": "Uint256"}],
         "stateMutability": "view"
+    },
+    {
+        "name": "get_game_info",
+        "type": "function",
+        "inputs": [],
+        "outputs": [{"name": "game_info", "type": "felt*"}],
+        "stateMutability": "view"
+    },
+    {
+        "name": "get_staking_costs", 
+        "type": "function",
+        "inputs": [],
+        "outputs": [{"name": "costs", "type": "felt*"}],
+        "stateMutability": "view"
+    },
+    {
+        "name": "get_game_analytics",
+        "type": "function", 
+        "inputs": [],
+        "outputs": [{"name": "analytics", "type": "felt*"}],
+        "stateMutability": "view"
+    },
+    {
+        "name": "emergency_pause",
+        "type": "function",
+        "inputs": [],
+        "outputs": [],
+        "stateMutability": "external"
+    },
+    {
+        "name": "emergency_unpause",
+        "type": "function",
+        "inputs": [],
+        "outputs": [],
+        "stateMutability": "external"
+    },
+    {
+        "name": "get_emergency_status",
+        "type": "function",
+        "inputs": [],
+        "outputs": [{"name": "is_paused", "type": "felt"}],
+        "stateMutability": "view"
+    },
+    {
+        "name": "import_beaver",
+        "type": "function",
+        "inputs": [
+            {"name": "owner", "type": "felt"},
+            {"name": "beaver_id", "type": "felt"},
+            {"name": "beaver_type", "type": "felt"},
+            {"name": "last_claim_time", "type": "felt"}
+        ],
+        "outputs": [],
+        "stateMutability": "external"
     }
 ];
 
@@ -747,23 +801,31 @@ export async function fetchPlayerInfo(address) {
             calldata: [formattedAddress]
         });
 
+        console.log('🔍 Raw get_user_beavers result:', manualResult);
+
         // Use manual call result since Contract class parsing has issues with felt* arrays
         let beaverIds = [];
         if (Array.isArray(manualResult)) {
+            console.log('📊 Manual result array length:', manualResult.length);
+            
+            if (manualResult.length === 0) {
+                console.log('✅ User has no beavers');
+                return { beavers: [], totalRewards: '0' };
+            }
+            
+            // All elements are beaver IDs directly (no length prefix)
             beaverIds = manualResult.map(id => {
-                // Convert hex string to number
-                if (typeof id === 'string') {
-                    return parseInt(id, 16);
-                }
-                return Number(id);
-            }).filter(id => id > 0); // Filter out 0 which means no beaver
+                const numId = parseInt(id, 16);
+                console.log(`🔄 Converting ${id} -> ${numId}`);
+                return numId;
+            }).filter(id => id > 0);
         }
         
-        // Remove duplicates using Set
-        beaverIds = [...new Set(beaverIds)];
+        console.log('🦫 Parsed beaver IDs:', beaverIds);
         
         if (!beaverIds || beaverIds.length === 0) {
-            return { beavers: [], totalRewards: BigInt(0) };
+            console.log('✅ No valid beaver IDs found');
+            return { beavers: [], totalRewards: '0' };
         }
         
         // Get total pending rewards once for the user
@@ -776,31 +838,100 @@ export async function fetchPlayerInfo(address) {
         
         for (const beaverId of beaverIds) {
             try {
+                console.log(`🦫 Fetching beaver ${beaverId} for user ${formattedAddress}`);
+                
                 // Get beaver details - pass address and beaver_id
                 const beaverDetails = await gameContract.get_beaver(formattedAddress, beaverId);
                 
+                // Convert owner from felt252 to hex string
+                let ownerAddress = beaverDetails.owner;
+                if (typeof ownerAddress === 'bigint' || typeof ownerAddress === 'number') {
+                    ownerAddress = '0x' + ownerAddress.toString(16);
+                }
+                
                 const beaver = {
                     id: Number(beaverId),
-                    owner: beaverDetails.owner,
+                    owner: ownerAddress,
                     type: Number(beaverDetails.beaver_type),
                     level: Number(beaverDetails.level),
                     last_claim_time: Number(beaverDetails.last_claim_time),
                     pendingRewards: BigInt(0) // Will calculate proportionally below
                 };
                 
-                // Calculate hourly rate for this beaver
-                const baseRates = [0, 300, 750, 2250]; // Index 0 unused, 1=Noob, 2=Pro, 3=Degen
+                // Debug ownership
+                console.log(`🔍 Ownership check for beaver ${beaverId}:`);
+                console.log(`  Contract owner: ${beaver.owner}`);
+                console.log(`  Requested user: ${formattedAddress}`);
+                console.log(`  Owner (lower): ${beaver.owner.toLowerCase()}`);
+                console.log(`  User (lower): ${formattedAddress.toLowerCase()}`);
+                
+                // Normalize addresses for comparison (remove leading zeros)
+                const normalizeAddress = (addr) => {
+                    if (!addr) return '';
+                    let normalized = addr.toLowerCase();
+                    if (normalized.startsWith('0x')) {
+                        normalized = '0x' + normalized.slice(2).replace(/^0+/, '');
+                    }
+                    return normalized;
+                };
+                
+                const normalizedOwner = normalizeAddress(beaver.owner);
+                const normalizedUser = normalizeAddress(formattedAddress);
+                
+                console.log(`  Normalized owner: ${normalizedOwner}`);
+                console.log(`  Normalized user: ${normalizedUser}`);
+                
+                if (normalizedOwner !== normalizedUser) {
+                    console.warn(`⚠️ Ownership mismatch for beaver ${beaverId}: owner=${normalizedOwner}, requested=${normalizedUser}`);
+                    continue;
+                }
+                
+                // Calculate hourly rate for this beaver (matching contract logic)
+                const baseRates = [300, 300, 750, 2250]; // Index 0=Noob, 1=Pro, 2=Degen (matching contract)
                 const baseRate = baseRates[beaver.type] || 300;
-                const levelMultiplier = Math.pow(1.5, beaver.level - 1);
+                
+                // Use exact contract level multipliers (divided by 1000)
+                const getContractLevelMultiplier = (level) => {
+                    if (level === 1) return 1000;      // 1.0x
+                    else if (level === 2) return 1500; // 1.5x  
+                    else if (level === 3) return 2250; // 2.25x
+                    else if (level === 4) return 3375; // 3.375x
+                    else return 5062;                  // 5.0625x (level 5)
+                };
+                
+                const levelMultiplier = getContractLevelMultiplier(beaver.level) / 1000;
                 const hourlyRate = baseRate * levelMultiplier;
                 totalHourlyRate += hourlyRate;
                 
                 beaver.hourlyRate = hourlyRate;
                 
                 beavers.push(beaver);
+                console.log(`✅ Successfully fetched beaver ${beaverId}`);
                 
             } catch (error) {
                 console.error(`❌ Error fetching beaver ${beaverId}:`, error);
+                if (error.message && error.message.includes('Not beaver owner')) {
+                    console.warn(`⚠️ Beaver ${beaverId} does not belong to user ${formattedAddress}`);
+                    console.warn(`🔧 This might be an old beaver that needs migration. Consider using import_beaver.`);
+                    
+                    // Create a placeholder beaver for old ones (for display purposes)
+                    const placeholderBeaver = {
+                        id: Number(beaverId),
+                        owner: formattedAddress,
+                        type: 0, // Default to Noob
+                        level: 1, // Default level
+                        last_claim_time: 0,
+                        pendingRewards: BigInt(0),
+                        hourlyRate: 300, // Default Noob rate
+                        isLegacy: true, // Mark as legacy/needs migration
+                        error: 'Migration required'
+                    };
+                    
+                    beavers.push(placeholderBeaver);
+                    console.log(`⚠️ Added placeholder for legacy beaver ${beaverId}`);
+                }
+                // Continue with next beaver instead of breaking
+                continue;
             }
         }
         
@@ -1191,5 +1322,125 @@ export async function fetchTokenInfo() {
                 totalBurned: "0"
             }
         };
+    }
+}
+
+// Fetch game information from contract
+export async function fetchGameInfo() {
+    try {
+        console.log('🔍 Fetching game info...');
+        const gameContract = new Contract(GAME_ABI, GAME_CONTRACT_ADDRESS, provider);
+        const gameInfo = await gameContract.get_game_info();
+        
+        console.log('📊 Game info received:', gameInfo);
+        return gameInfo;
+    } catch (error) {
+        console.error('❌ Game info fetch error:', error);
+        return null;
+    }
+}
+
+// Fetch game analytics from contract
+export async function fetchGameAnalytics() {
+    try {
+        console.log('🔍 Fetching game analytics...');
+        const gameContract = new Contract(GAME_ABI, GAME_CONTRACT_ADDRESS, provider);
+        const analytics = await gameContract.get_game_analytics();
+        
+        console.log('📊 Analytics received:', analytics);
+        return analytics;
+    } catch (error) {
+        console.error('❌ Analytics fetch error:', error);
+        return null;
+    }
+}
+
+// Get emergency status from contract
+export async function getEmergencyStatus() {
+    try {
+        console.log('🔍 Checking emergency status...');
+        const gameContract = new Contract(GAME_ABI, GAME_CONTRACT_ADDRESS, provider);
+        const isPaused = await gameContract.get_emergency_status();
+        
+        console.log('⚠️ Emergency status:', isPaused);
+        return Boolean(isPaused);
+    } catch (error) {
+        console.error('❌ Emergency status error:', error);
+        return false;
+    }
+}
+
+// Get staking costs from contract
+export async function fetchStakingCosts() {
+    try {
+        console.log('🔍 Fetching staking costs...');
+        const gameContract = new Contract(GAME_ABI, GAME_CONTRACT_ADDRESS, provider);
+        const costs = await gameContract.get_staking_costs();
+        
+        console.log('💰 Staking costs received:', costs);
+        return costs;
+    } catch (error) {
+        console.error('❌ Staking costs fetch error:', error);
+        return null;
+    }
+}
+
+// Import beaver (migration function)
+export async function importBeaver(owner, beaverId, beaverType, lastClaimTime) {
+    if (!currentConnection || !currentConnection.isConnected) {
+        throw new Error("Wallet not connected");
+    }
+    
+    try {
+        console.log('🔄 Importing beaver...', {owner, beaverId, beaverType, lastClaimTime});
+        
+        const gameContract = new Contract(GAME_ABI, GAME_CONTRACT_ADDRESS, currentConnection.account);
+        const result = await gameContract.import_beaver(owner, beaverId, beaverType, lastClaimTime);
+        
+        console.log('✅ Beaver import successful:', result);
+        return result;
+    } catch (error) {
+        console.error('❌ Import beaver error:', error);
+        throw error;
+    }
+}
+
+// Emergency pause function (admin only)
+export async function emergencyPause() {
+    if (!currentConnection || !currentConnection.isConnected) {
+        throw new Error("Wallet not connected");
+    }
+    
+    try {
+        console.log('⚠️ Emergency pausing...');
+        
+        const gameContract = new Contract(GAME_ABI, GAME_CONTRACT_ADDRESS, currentConnection.account);
+        const result = await gameContract.emergency_pause();
+        
+        console.log('✅ Emergency pause successful:', result);
+        return result;
+    } catch (error) {
+        console.error('❌ Emergency pause error:', error);
+        throw error;
+    }
+}
+
+// Emergency unpause function (admin only)
+export async function emergencyUnpause() {
+    if (!currentConnection || !currentConnection.isConnected) {
+        throw new Error("Wallet not connected");
+    }
+    
+    try {
+        console.log('✅ Emergency unpausing...');
+        
+        const gameContract = new Contract(GAME_ABI, GAME_CONTRACT_ADDRESS, currentConnection.account);
+        const result = await gameContract.emergency_unpause();
+        
+        console.log('✅ Emergency unpause successful:', result);
+        return result;
+    } catch (error) {
+        console.error('❌ Emergency unpause error:', error);
+        throw error;
     }
 } 

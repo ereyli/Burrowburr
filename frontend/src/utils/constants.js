@@ -49,9 +49,12 @@ export const GAME_CONFIG = {
       maxLevel: 5
     }
   },
-  TOTAL_REWARDS: 1680000000, // 1.68B BURR total (80% of 2.1B)
+  TOTAL_REWARDS: 2100000000, // 2.1B BURR total max supply
   MAX_SUPPLY: 2100000000, // 2.1B BURR max supply
-  GAME_DURATION_DAYS: 365
+  GAME_DURATION_DAYS: 365,
+  // Rate limiting parameters
+  MAX_BEAVERS_PER_USER: 10,
+  STAKE_COOLDOWN_MINUTES: 5
 };
 
 // Updated upgrade costs based on new economics - MATCHING CONTRACT LOGIC
