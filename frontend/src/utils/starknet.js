@@ -147,6 +147,47 @@ const GAME_ABI = [
         "inputs": [],
         "outputs": [{"name": "total_burned", "type": "Uint256"}],
         "stateMutability": "view"
+    },
+    {
+        "name": "get_game_info",
+        "type": "function",
+        "inputs": [],
+        "outputs": [
+            {"name": "start_time", "type": "felt"},
+            {"name": "end_time", "type": "felt"},
+            {"name": "total_minted", "type": "Uint256"},
+            {"name": "max_reward_pool", "type": "Uint256"},
+            {"name": "is_ended", "type": "felt"}
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "name": "get_staking_costs",
+        "type": "function",
+        "inputs": [],
+        "outputs": [
+            {"name": "noob_cost", "type": "Uint256"},
+            {"name": "pro_cost", "type": "Uint256"},
+            {"name": "degen_cost", "type": "Uint256"}
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "name": "get_game_analytics",
+        "type": "function",
+        "inputs": [],
+        "outputs": [
+            {"name": "total_beavers_staked", "type": "felt"},
+            {"name": "total_burr_claimed", "type": "Uint256"},
+            {"name": "total_strk_collected", "type": "Uint256"},
+            {"name": "total_burr_burned", "type": "Uint256"},
+            {"name": "noob_count", "type": "felt"},
+            {"name": "pro_count", "type": "felt"},
+            {"name": "degen_count", "type": "felt"},
+            {"name": "active_users", "type": "felt"},
+            {"name": "total_upgrades", "type": "felt"}
+        ],
+        "stateMutability": "view"
     }
 ];
 
@@ -740,12 +781,16 @@ export async function fetchPlayerInfo(address) {
             formattedAddress = '0x' + address;
         }
         
+        console.log("📋 Formatted address:", formattedAddress);
+        
         // Manual contract call to test
         const manualResult = await provider.callContract({
             contractAddress: GAME_CONTRACT_ADDRESS,
             entrypoint: 'get_user_beavers',
             calldata: [formattedAddress]
         });
+
+        console.log("📋 Raw manual result:", manualResult);
 
         // Use manual call result since Contract class parsing has issues with felt* arrays
         let beaverIds = [];
@@ -759,10 +804,15 @@ export async function fetchPlayerInfo(address) {
             }).filter(id => id > 0); // Filter out 0 which means no beaver
         }
         
+        console.log("📋 Parsed beaver IDs:", beaverIds);
+        
         // Remove duplicates using Set
         beaverIds = [...new Set(beaverIds)];
         
+        console.log("📋 Final beaver IDs (after deduplication):", beaverIds);
+        
         if (!beaverIds || beaverIds.length === 0) {
+            console.log("📋 No beavers found for user");
             return { beavers: [], totalRewards: BigInt(0) };
         }
         
@@ -770,14 +820,20 @@ export async function fetchPlayerInfo(address) {
         const totalPendingRewards = await gameContract.calculate_pending_rewards(formattedAddress);
         const totalPendingBigInt = safeBalanceConvert(totalPendingRewards);
         
+        console.log("📋 Total pending rewards:", totalPendingBigInt.toString());
+        
         // Fetch details for each beaver individually
         const beavers = [];
         let totalHourlyRate = 0;
         
         for (const beaverId of beaverIds) {
             try {
+                console.log(`📋 Fetching details for beaver ${beaverId}...`);
+                
                 // Get beaver details - pass address and beaver_id
                 const beaverDetails = await gameContract.get_beaver(formattedAddress, beaverId);
+                
+                console.log(`📋 Beaver ${beaverId} details:`, beaverDetails);
                 
                 const beaver = {
                     id: Number(beaverId),
@@ -797,12 +853,16 @@ export async function fetchPlayerInfo(address) {
                 
                 beaver.hourlyRate = hourlyRate;
                 
+                console.log(`📋 Beaver ${beaverId} processed:`, beaver);
+                
                 beavers.push(beaver);
                 
             } catch (error) {
                 console.error(`❌ Error fetching beaver ${beaverId}:`, error);
             }
         }
+        
+        console.log("📋 Total hourly rate:", totalHourlyRate);
         
         // Distribute total pending rewards proportionally based on hourly rates
         for (const beaver of beavers) {
@@ -814,6 +874,8 @@ export async function fetchPlayerInfo(address) {
                 beaver.pendingRewards = '0';
             }
         }
+        
+        console.log("📋 Final beavers array:", beavers);
         
         return { beavers, totalRewards: formatBalance(totalPendingBigInt, 18) };
         
@@ -1090,6 +1152,81 @@ export function maintainConnection() {
         } catch (error) {
             console.log('⚠️ Could not set up Braavos listeners:', error);
         }
+    }
+}
+
+// Test function to check beaver import status
+export async function testBeaverImport(address) {
+    try {
+        console.log("🧪 Testing beaver import for address:", address);
+        
+        const gameContract = new Contract(GAME_ABI, GAME_CONTRACT_ADDRESS, provider);
+        
+        // Ensure address is properly formatted
+        let formattedAddress = address;
+        if (typeof address === 'string' && !address.startsWith('0x')) {
+            formattedAddress = '0x' + address;
+        }
+        
+        console.log("🧪 Testing with address:", formattedAddress);
+        console.log("🧪 Contract address:", GAME_CONTRACT_ADDRESS);
+        
+        // Test 1: Check if user has any beavers using manual call
+        try {
+            const manualResult = await provider.callContract({
+                contractAddress: GAME_CONTRACT_ADDRESS,
+                entrypoint: 'get_user_beavers',
+                calldata: [formattedAddress]
+            });
+            console.log("🧪 Manual get_user_beavers result:", manualResult);
+        } catch (error) {
+            console.log("🧪 Manual get_user_beavers error:", error.message);
+        }
+        
+        // Test 2: Try contract method
+        try {
+            const beaverIds = await gameContract.get_user_beavers(formattedAddress);
+            console.log("🧪 Contract get_user_beavers result:", beaverIds);
+        } catch (error) {
+            console.log("🧪 Contract get_user_beavers error:", error.message);
+        }
+        
+        // Test 3: Check specific beaver IDs that should be imported
+        const testBeaverIds = [1, 2, 3, 4, 5]; // Common beaver IDs to test
+        
+        for (const testId of testBeaverIds) {
+            try {
+                const beaverDetails = await gameContract.get_beaver(formattedAddress, testId);
+                console.log(`🧪 Beaver ${testId} details:`, beaverDetails);
+            } catch (error) {
+                console.log(`🧪 Beaver ${testId} not found or error:`, error.message);
+            }
+        }
+        
+        // Test 4: Check pending rewards
+        try {
+            const pendingRewards = await gameContract.calculate_pending_rewards(formattedAddress);
+            console.log("🧪 Pending rewards:", pendingRewards);
+        } catch (error) {
+            console.log("🧪 Pending rewards error:", error.message);
+        }
+        
+        // Test 5: Check game info
+        try {
+            const gameInfo = await gameContract.get_game_info();
+            console.log("🧪 Game info:", gameInfo);
+        } catch (error) {
+            console.log("🧪 Game info error:", error.message);
+        }
+        
+        return {
+            success: true,
+            message: "Test completed - check console for details"
+        };
+        
+    } catch (error) {
+        console.error("🧪 Test error:", error);
+        return { error: error.message };
     }
 }
 

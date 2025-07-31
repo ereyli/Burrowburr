@@ -806,6 +806,8 @@ function App() {
     setTimeout(() => setCopied(false), 1200);
   };
 
+
+
   return (
     <ErrorBoundary>
     <div>
@@ -879,6 +881,8 @@ function App() {
             >
               Buy $BURR
             </a>
+
+
 
             <button 
               onClick={isConnected ? async () => {
