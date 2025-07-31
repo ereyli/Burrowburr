@@ -86,7 +86,7 @@ const GAME_ABI = [
     {
         "name": "stake_beaver",
         "type": "function",
-        "inputs": [{"name": "beaver_type", "type": "felt"}],
+        "inputs": [{"name": "beaver_type", "type": "core::integer::u8"}],
         "outputs": [],
         "stateMutability": "external"
     },
@@ -100,93 +100,212 @@ const GAME_ABI = [
     {
         "name": "upgrade_beaver",
         "type": "function",
-        "inputs": [{"name": "beaver_id", "type": "felt"}],
+        "inputs": [{"name": "beaver_id", "type": "core::integer::u64"}],
+        "outputs": [],
+        "stateMutability": "external"
+    },
+    {
+        "name": "burn_remaining",
+        "type": "function",
+        "inputs": [],
+        "outputs": [],
+        "stateMutability": "external"
+    },
+    {
+        "name": "import_beaver",
+        "type": "function",
+        "inputs": [
+            {"name": "owner", "type": "core::starknet::contract_address::ContractAddress"},
+            {"name": "beaver_id", "type": "core::integer::u64"},
+            {"name": "beaver_type", "type": "core::integer::u8"},
+            {"name": "last_claim_time", "type": "core::integer::u64"}
+        ],
         "outputs": [],
         "stateMutability": "external"
     },
     {
         "name": "get_user_beavers",
         "type": "function",
-        "inputs": [{"name": "owner", "type": "felt"}],
-        "outputs": [{"name": "beaver_ids", "type": "felt*"}],
+        "inputs": [{"name": "owner", "type": "core::starknet::contract_address::ContractAddress"}],
+        "outputs": [{"type": "core::array::Array::<core::integer::u64>"}],
         "stateMutability": "view"
     },
     {
         "name": "get_user_last_claim",
         "type": "function",
-        "inputs": [{"name": "owner", "type": "felt"}],
-        "outputs": [{"name": "last_claim", "type": "felt"}],
+        "inputs": [{"name": "owner", "type": "core::starknet::contract_address::ContractAddress"}],
+        "outputs": [{"type": "core::integer::u64"}],
         "stateMutability": "view"
     },
     {
         "name": "get_beaver",
         "type": "function",
         "inputs": [
-            {"name": "owner", "type": "felt"},
-            {"name": "beaver_id", "type": "felt"}
+            {"name": "owner", "type": "core::starknet::contract_address::ContractAddress"},
+            {"name": "beaver_id", "type": "core::integer::u64"}
         ],
-        "outputs": [
-            {"name": "id", "type": "felt"},
-            {"name": "beaver_type", "type": "felt"},
-            {"name": "level", "type": "felt"},
-            {"name": "last_claim_time", "type": "felt"},
-            {"name": "owner", "type": "felt"}
-        ],
+        "outputs": [{"type": "burrow_verify::BurrowGame::Beaver"}],
         "stateMutability": "view"
     },
     {
         "name": "calculate_pending_rewards",
         "type": "function",
-        "inputs": [{"name": "owner", "type": "felt"}],
-        "outputs": [{"name": "rewards", "type": "Uint256"}],
-        "stateMutability": "view"
-    },
-    {
-        "name": "get_total_burned",
-        "type": "function",
-        "inputs": [],
-        "outputs": [{"name": "total_burned", "type": "Uint256"}],
+        "inputs": [{"name": "owner", "type": "core::starknet::contract_address::ContractAddress"}],
+        "outputs": [{"type": "core::integer::u256"}],
         "stateMutability": "view"
     },
     {
         "name": "get_game_info",
         "type": "function",
         "inputs": [],
-        "outputs": [
-            {"name": "start_time", "type": "felt"},
-            {"name": "end_time", "type": "felt"},
-            {"name": "total_minted", "type": "Uint256"},
-            {"name": "max_reward_pool", "type": "Uint256"},
-            {"name": "is_ended", "type": "felt"}
-        ],
+        "outputs": [{"type": "burrow_verify::BurrowGame::GameInfo"}],
+        "stateMutability": "view"
+    },
+    {
+        "name": "is_game_ended",
+        "type": "function",
+        "inputs": [],
+        "outputs": [{"type": "core::bool"}],
+        "stateMutability": "view"
+    },
+    {
+        "name": "set_burr_token",
+        "type": "function",
+        "inputs": [{"name": "token_address", "type": "core::starknet::contract_address::ContractAddress"}],
+        "outputs": [],
+        "stateMutability": "external"
+    },
+    {
+        "name": "get_burr_token",
+        "type": "function",
+        "inputs": [],
+        "outputs": [{"type": "core::starknet::contract_address::ContractAddress"}],
+        "stateMutability": "view"
+    },
+    {
+        "name": "set_strk_token",
+        "type": "function",
+        "inputs": [{"name": "token_address", "type": "core::starknet::contract_address::ContractAddress"}],
+        "outputs": [],
+        "stateMutability": "external"
+    },
+    {
+        "name": "get_strk_token",
+        "type": "function",
+        "inputs": [],
+        "outputs": [{"type": "core::starknet::contract_address::ContractAddress"}],
         "stateMutability": "view"
     },
     {
         "name": "get_staking_costs",
         "type": "function",
         "inputs": [],
-        "outputs": [
-            {"name": "noob_cost", "type": "Uint256"},
-            {"name": "pro_cost", "type": "Uint256"},
-            {"name": "degen_cost", "type": "Uint256"}
-        ],
+        "outputs": [{"type": "burrow_verify::BurrowGame::StakingCosts"}],
+        "stateMutability": "view"
+    },
+    {
+        "name": "withdraw_strk",
+        "type": "function",
+        "inputs": [{"name": "amount", "type": "core::integer::u256"}],
+        "outputs": [],
+        "stateMutability": "external"
+    },
+    {
+        "name": "withdraw_burr",
+        "type": "function",
+        "inputs": [{"name": "amount", "type": "core::integer::u256"}],
+        "outputs": [],
+        "stateMutability": "external"
+    },
+    {
+        "name": "get_contract_balances",
+        "type": "function",
+        "inputs": [],
+        "outputs": [{"type": "(core::integer::u256, core::integer::u256)"}],
+        "stateMutability": "view"
+    },
+    {
+        "name": "fund_burr_pool",
+        "type": "function",
+        "inputs": [{"name": "amount", "type": "core::integer::u256"}],
+        "outputs": [],
+        "stateMutability": "external"
+    },
+    {
+        "name": "get_total_burned",
+        "type": "function",
+        "inputs": [],
+        "outputs": [{"type": "core::integer::u256"}],
         "stateMutability": "view"
     },
     {
         "name": "get_game_analytics",
         "type": "function",
         "inputs": [],
-        "outputs": [
-            {"name": "total_beavers_staked", "type": "felt"},
-            {"name": "total_burr_claimed", "type": "Uint256"},
-            {"name": "total_strk_collected", "type": "Uint256"},
-            {"name": "total_burr_burned", "type": "Uint256"},
-            {"name": "noob_count", "type": "felt"},
-            {"name": "pro_count", "type": "felt"},
-            {"name": "degen_count", "type": "felt"},
-            {"name": "active_users", "type": "felt"},
-            {"name": "total_upgrades", "type": "felt"}
-        ],
+        "outputs": [{"type": "burrow_verify::BurrowGame::GameAnalytics"}],
+        "stateMutability": "view"
+    },
+    {
+        "name": "get_user_stats",
+        "type": "function",
+        "inputs": [{"name": "user", "type": "core::starknet::contract_address::ContractAddress"}],
+        "outputs": [{"type": "burrow_verify::BurrowGame::UserStats"}],
+        "stateMutability": "view"
+    },
+    {
+        "name": "get_beaver_type_stats",
+        "type": "function",
+        "inputs": [],
+        "outputs": [{"type": "(core::integer::u64, core::integer::u64, core::integer::u64)"}],
+        "stateMutability": "view"
+    },
+    {
+        "name": "get_total_claimed_burr",
+        "type": "function",
+        "inputs": [],
+        "outputs": [{"type": "core::integer::u256"}],
+        "stateMutability": "view"
+    },
+    {
+        "name": "get_active_users_count",
+        "type": "function",
+        "inputs": [],
+        "outputs": [{"type": "core::integer::u64"}],
+        "stateMutability": "view"
+    },
+    {
+        "name": "emergency_pause",
+        "type": "function",
+        "inputs": [],
+        "outputs": [],
+        "stateMutability": "external"
+    },
+    {
+        "name": "emergency_unpause",
+        "type": "function",
+        "inputs": [],
+        "outputs": [],
+        "stateMutability": "external"
+    },
+    {
+        "name": "get_emergency_status",
+        "type": "function",
+        "inputs": [],
+        "outputs": [{"type": "core::bool"}],
+        "stateMutability": "view"
+    },
+    {
+        "name": "upgrade_max_pool",
+        "type": "function",
+        "inputs": [{"name": "new_max_pool", "type": "core::integer::u256"}],
+        "outputs": [],
+        "stateMutability": "external"
+    },
+    {
+        "name": "get_max_pool",
+        "type": "function",
+        "inputs": [],
+        "outputs": [{"type": "core::integer::u256"}],
         "stateMutability": "view"
     }
 ];
@@ -802,9 +921,20 @@ export async function fetchPlayerInfo(address) {
         if (Array.isArray(manualResult)) {
             console.log("📋 Processing as array");
             beaverIds = manualResult.map(id => {
-                // Convert hex string to number
+                // Convert string to number - try hex first, then decimal
                 if (typeof id === 'string') {
-                    const numValue = parseInt(id, 16);
+                    let numValue;
+                    // If it starts with 0x, it's hex
+                    if (id.startsWith('0x')) {
+                        numValue = parseInt(id, 16);
+                    } else {
+                        // Try decimal first
+                        numValue = parseInt(id, 10);
+                        // If decimal parsing fails or gives 0/NaN, try hex
+                        if (isNaN(numValue) || numValue === 0) {
+                            numValue = parseInt(id, 16);
+                        }
+                    }
                     console.log(`📋 Converting string ${id} to number ${numValue}`);
                     return numValue;
                 }
@@ -818,7 +948,14 @@ export async function fetchPlayerInfo(address) {
             if (Array.isArray(manualResult.beaver_ids)) {
                 beaverIds = manualResult.beaver_ids.map(id => {
                     if (typeof id === 'string') {
-                        return parseInt(id, 16);
+                        // If it starts with 0x, it's hex
+                        if (id.startsWith('0x')) {
+                            return parseInt(id, 16);
+                        } else {
+                            // Try decimal first
+                            const numValue = parseInt(id, 10);
+                            return isNaN(numValue) ? parseInt(id, 16) : numValue;
+                        }
                     }
                     return Number(id);
                 }).filter(id => id > 0);
@@ -855,7 +992,16 @@ export async function fetchPlayerInfo(address) {
             console.log("📋 Processing as single value");
             let numValue;
             if (typeof manualResult === 'string') {
-                numValue = parseInt(manualResult, 16);
+                // If it starts with 0x, it's hex
+                if (manualResult.startsWith('0x')) {
+                    numValue = parseInt(manualResult, 16);
+                } else {
+                    // Try decimal first
+                    numValue = parseInt(manualResult, 10);
+                    if (isNaN(numValue)) {
+                        numValue = parseInt(manualResult, 16);
+                    }
+                }
             } else {
                 numValue = Number(manualResult);
             }
