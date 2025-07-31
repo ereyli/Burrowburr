@@ -1076,13 +1076,48 @@ export async function fetchPlayerInfo(address) {
                 // we can trust they belong to the user and fetch details directly
                 let beaverDetails;
                 
-                // Use get_beaver with the user's address (since IDs come from get_user_beavers, we know they belong to user)
+                // Since get_user_beavers returns these IDs, they must belong to this user
+                // But there might be an address normalization issue - try different address formats
+                let result = null;
+                let addressesToTry = [
+                    formattedAddress,
+                    formattedAddress.toLowerCase(),
+                    formattedAddress.toUpperCase()
+                ];
+                
+                // Also try normalized addresses (with leading zeros)
+                const normalizedAddr = normalizeAddress(formattedAddress);
+                if (!addressesToTry.includes(normalizedAddr)) {
+                    addressesToTry.push(normalizedAddr);
+                }
+                
+                // Try without leading zeros
+                const withoutLeadingZeros = '0x' + formattedAddress.replace('0x', '').replace(/^0+/, '');
+                if (!addressesToTry.includes(withoutLeadingZeros)) {
+                    addressesToTry.push(withoutLeadingZeros);
+                }
+                
+                for (const addressToTry of addressesToTry) {
+                    try {
+                        result = await provider.callContract({
+                            contractAddress: GAME_CONTRACT_ADDRESS,
+                            entrypoint: 'get_beaver',
+                            calldata: [addressToTry, beaverId.toString()]
+                        });
+                        console.log(`📋 Success with address format: ${addressToTry}`);
+                        break; // Success, exit loop
+                    } catch (tryError) {
+                        console.log(`📋 Failed with address ${addressToTry}:`, tryError.message);
+                        continue; // Try next address format
+                    }
+                }
+                
+                if (!result) {
+                    console.log(`📋 All address formats failed for beaver ${beaverId}, skipping`);
+                    continue;
+                }
+                
                 try {
-                    const result = await provider.callContract({
-                        contractAddress: GAME_CONTRACT_ADDRESS,
-                        entrypoint: 'get_beaver',
-                        calldata: [formattedAddress, beaverId.toString()]
-                    });
                     
                     console.log(`📋 Manual beaver ${beaverId} result:`, result.result);
                     
