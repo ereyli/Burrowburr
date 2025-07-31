@@ -86,7 +86,7 @@ const GAME_ABI = [
     {
         "name": "stake_beaver",
         "type": "function",
-        "inputs": [{"name": "beaver_type", "type": "core::integer::u8"}],
+        "inputs": [{"name": "beaver_type", "type": "felt"}],
         "outputs": [],
         "stateMutability": "external"
     },
@@ -100,212 +100,52 @@ const GAME_ABI = [
     {
         "name": "upgrade_beaver",
         "type": "function",
-        "inputs": [{"name": "beaver_id", "type": "core::integer::u64"}],
-        "outputs": [],
-        "stateMutability": "external"
-    },
-    {
-        "name": "burn_remaining",
-        "type": "function",
-        "inputs": [],
-        "outputs": [],
-        "stateMutability": "external"
-    },
-    {
-        "name": "import_beaver",
-        "type": "function",
-        "inputs": [
-            {"name": "owner", "type": "core::starknet::contract_address::ContractAddress"},
-            {"name": "beaver_id", "type": "core::integer::u64"},
-            {"name": "beaver_type", "type": "core::integer::u8"},
-            {"name": "last_claim_time", "type": "core::integer::u64"}
-        ],
+        "inputs": [{"name": "beaver_id", "type": "felt"}],
         "outputs": [],
         "stateMutability": "external"
     },
     {
         "name": "get_user_beavers",
         "type": "function",
-        "inputs": [{"name": "owner", "type": "core::starknet::contract_address::ContractAddress"}],
-        "outputs": [{"type": "core::array::Array::<core::integer::u64>"}],
+        "inputs": [{"name": "owner", "type": "felt"}],
+        "outputs": [{"name": "beaver_ids", "type": "felt*"}],
         "stateMutability": "view"
     },
     {
         "name": "get_user_last_claim",
         "type": "function",
-        "inputs": [{"name": "owner", "type": "core::starknet::contract_address::ContractAddress"}],
-        "outputs": [{"type": "core::integer::u64"}],
+        "inputs": [{"name": "owner", "type": "felt"}],
+        "outputs": [{"name": "last_claim", "type": "felt"}],
         "stateMutability": "view"
     },
     {
         "name": "get_beaver",
         "type": "function",
         "inputs": [
-            {"name": "owner", "type": "core::starknet::contract_address::ContractAddress"},
-            {"name": "beaver_id", "type": "core::integer::u64"}
+            {"name": "owner", "type": "felt"},
+            {"name": "beaver_id", "type": "felt"}
         ],
-        "outputs": [{"type": "burrow_verify::BurrowGame::Beaver"}],
+        "outputs": [
+            {"name": "id", "type": "felt"},
+            {"name": "beaver_type", "type": "felt"},
+            {"name": "level", "type": "felt"},
+            {"name": "last_claim_time", "type": "felt"},
+            {"name": "owner", "type": "felt"}
+        ],
         "stateMutability": "view"
     },
     {
         "name": "calculate_pending_rewards",
         "type": "function",
-        "inputs": [{"name": "owner", "type": "core::starknet::contract_address::ContractAddress"}],
-        "outputs": [{"type": "core::integer::u256"}],
+        "inputs": [{"name": "owner", "type": "felt"}],
+        "outputs": [{"name": "rewards", "type": "Uint256"}],
         "stateMutability": "view"
-    },
-    {
-        "name": "get_game_info",
-        "type": "function",
-        "inputs": [],
-        "outputs": [{"type": "burrow_verify::BurrowGame::GameInfo"}],
-        "stateMutability": "view"
-    },
-    {
-        "name": "is_game_ended",
-        "type": "function",
-        "inputs": [],
-        "outputs": [{"type": "core::bool"}],
-        "stateMutability": "view"
-    },
-    {
-        "name": "set_burr_token",
-        "type": "function",
-        "inputs": [{"name": "token_address", "type": "core::starknet::contract_address::ContractAddress"}],
-        "outputs": [],
-        "stateMutability": "external"
-    },
-    {
-        "name": "get_burr_token",
-        "type": "function",
-        "inputs": [],
-        "outputs": [{"type": "core::starknet::contract_address::ContractAddress"}],
-        "stateMutability": "view"
-    },
-    {
-        "name": "set_strk_token",
-        "type": "function",
-        "inputs": [{"name": "token_address", "type": "core::starknet::contract_address::ContractAddress"}],
-        "outputs": [],
-        "stateMutability": "external"
-    },
-    {
-        "name": "get_strk_token",
-        "type": "function",
-        "inputs": [],
-        "outputs": [{"type": "core::starknet::contract_address::ContractAddress"}],
-        "stateMutability": "view"
-    },
-    {
-        "name": "get_staking_costs",
-        "type": "function",
-        "inputs": [],
-        "outputs": [{"type": "burrow_verify::BurrowGame::StakingCosts"}],
-        "stateMutability": "view"
-    },
-    {
-        "name": "withdraw_strk",
-        "type": "function",
-        "inputs": [{"name": "amount", "type": "core::integer::u256"}],
-        "outputs": [],
-        "stateMutability": "external"
-    },
-    {
-        "name": "withdraw_burr",
-        "type": "function",
-        "inputs": [{"name": "amount", "type": "core::integer::u256"}],
-        "outputs": [],
-        "stateMutability": "external"
-    },
-    {
-        "name": "get_contract_balances",
-        "type": "function",
-        "inputs": [],
-        "outputs": [{"type": "(core::integer::u256, core::integer::u256)"}],
-        "stateMutability": "view"
-    },
-    {
-        "name": "fund_burr_pool",
-        "type": "function",
-        "inputs": [{"name": "amount", "type": "core::integer::u256"}],
-        "outputs": [],
-        "stateMutability": "external"
     },
     {
         "name": "get_total_burned",
         "type": "function",
         "inputs": [],
-        "outputs": [{"type": "core::integer::u256"}],
-        "stateMutability": "view"
-    },
-    {
-        "name": "get_game_analytics",
-        "type": "function",
-        "inputs": [],
-        "outputs": [{"type": "burrow_verify::BurrowGame::GameAnalytics"}],
-        "stateMutability": "view"
-    },
-    {
-        "name": "get_user_stats",
-        "type": "function",
-        "inputs": [{"name": "user", "type": "core::starknet::contract_address::ContractAddress"}],
-        "outputs": [{"type": "burrow_verify::BurrowGame::UserStats"}],
-        "stateMutability": "view"
-    },
-    {
-        "name": "get_beaver_type_stats",
-        "type": "function",
-        "inputs": [],
-        "outputs": [{"type": "(core::integer::u64, core::integer::u64, core::integer::u64)"}],
-        "stateMutability": "view"
-    },
-    {
-        "name": "get_total_claimed_burr",
-        "type": "function",
-        "inputs": [],
-        "outputs": [{"type": "core::integer::u256"}],
-        "stateMutability": "view"
-    },
-    {
-        "name": "get_active_users_count",
-        "type": "function",
-        "inputs": [],
-        "outputs": [{"type": "core::integer::u64"}],
-        "stateMutability": "view"
-    },
-    {
-        "name": "emergency_pause",
-        "type": "function",
-        "inputs": [],
-        "outputs": [],
-        "stateMutability": "external"
-    },
-    {
-        "name": "emergency_unpause",
-        "type": "function",
-        "inputs": [],
-        "outputs": [],
-        "stateMutability": "external"
-    },
-    {
-        "name": "get_emergency_status",
-        "type": "function",
-        "inputs": [],
-        "outputs": [{"type": "core::bool"}],
-        "stateMutability": "view"
-    },
-    {
-        "name": "upgrade_max_pool",
-        "type": "function",
-        "inputs": [{"name": "new_max_pool", "type": "core::integer::u256"}],
-        "outputs": [],
-        "stateMutability": "external"
-    },
-    {
-        "name": "get_max_pool",
-        "type": "function",
-        "inputs": [],
-        "outputs": [{"type": "core::integer::u256"}],
+        "outputs": [{"name": "total_burned", "type": "Uint256"}],
         "stateMutability": "view"
     }
 ];
@@ -900,161 +740,29 @@ export async function fetchPlayerInfo(address) {
             formattedAddress = '0x' + address;
         }
         
-        console.log("📋 Formatted address:", formattedAddress);
-        
-        // Try contract method first, fallback to manual call
-        let manualResult;
-        try {
-            console.log("📋 Trying contract method get_user_beavers...");
-            manualResult = await gameContract.get_user_beavers(formattedAddress);
-            console.log("📋 Contract method result:", manualResult);
-        } catch (contractError) {
-            console.log("📋 Contract method failed, trying manual call...", contractError.message);
-            // Fallback to manual contract call
-            manualResult = await provider.callContract({
-                contractAddress: GAME_CONTRACT_ADDRESS,
-                entrypoint: 'get_user_beavers',
-                calldata: [formattedAddress]
-            });
-            console.log("📋 Manual call result:", manualResult);
-        }
+        // Manual contract call to test
+        const manualResult = await provider.callContract({
+            contractAddress: GAME_CONTRACT_ADDRESS,
+            entrypoint: 'get_user_beavers',
+            calldata: [formattedAddress]
+        });
 
-        // Parse the result - handle different response formats
+        // Use manual call result since Contract class parsing has issues with felt* arrays
         let beaverIds = [];
-        
-        console.log("📋 Manual result type:", typeof manualResult);
-        console.log("📋 Manual result keys:", manualResult ? Object.keys(manualResult) : 'null');
-        
-        // Case 1: Direct array response (most common for felt*)
         if (Array.isArray(manualResult)) {
-            console.log("📋 Processing as array");
             beaverIds = manualResult.map(id => {
-                // Handle different data types: string, number, BigInt
+                // Convert hex string to number
                 if (typeof id === 'string') {
-                    let numValue;
-                    // If it starts with 0x, it's hex
-                    if (id.startsWith('0x')) {
-                        numValue = parseInt(id, 16);
-                    } else {
-                        // Try decimal first
-                        numValue = parseInt(id, 10);
-                        // If decimal parsing fails or gives 0/NaN, try hex
-                        if (isNaN(numValue) || numValue === 0) {
-                            numValue = parseInt(id, 16);
-                        }
-                    }
-                    console.log(`📋 Converting string ${id} to number ${numValue}`);
-                    return numValue;
-                } else if (typeof id === 'bigint') {
-                    const numValue = Number(id);
-                    console.log(`📋 Converting BigInt ${id} to number ${numValue}`);
-                    return numValue;
-                } else {
-                    console.log(`📋 Using number directly: ${id}`);
-                    return Number(id);
+                    return parseInt(id, 16);
                 }
+                return Number(id);
             }).filter(id => id > 0); // Filter out 0 which means no beaver
         }
-        // Case 2: Object with beaver_ids property
-        else if (manualResult && manualResult.beaver_ids) {
-            console.log("📋 Processing as object with beaver_ids");
-            if (Array.isArray(manualResult.beaver_ids)) {
-                beaverIds = manualResult.beaver_ids.map(id => {
-                    if (typeof id === 'string') {
-                        // If it starts with 0x, it's hex
-                        if (id.startsWith('0x')) {
-                            return parseInt(id, 16);
-                        } else {
-                            // Try decimal first
-                            const numValue = parseInt(id, 10);
-                            return isNaN(numValue) ? parseInt(id, 16) : numValue;
-                        }
-                    }
-                    return Number(id);
-                }).filter(id => id > 0);
-            }
-        }
-        // Case 3: Object with numeric keys (felt* format)
-        else if (manualResult && typeof manualResult === 'object') {
-            console.log("📋 Processing as object with numeric keys");
-            // Try to extract numeric values from object
-            for (let key in manualResult) {
-                const value = manualResult[key];
-                console.log(`📋 Key: ${key}, Value: ${value}, Type: ${typeof value}`);
-                
-                if (typeof value === 'string' && /^[0-9a-fA-F]+$/.test(value)) {
-                    const numValue = parseInt(value, 16);
-                    console.log(`📋 Converting hex string ${value} to number ${numValue}`);
-                    if (numValue > 0) {
-                        beaverIds.push(numValue);
-                    }
-                } else if (typeof value === 'number' && value > 0) {
-                    console.log(`📋 Adding number directly: ${value}`);
-                    beaverIds.push(value);
-                } else if (typeof value === 'string' && /^\d+$/.test(value)) {
-                    const numValue = parseInt(value, 10);
-                    console.log(`📋 Converting decimal string ${value} to number ${numValue}`);
-                    if (numValue > 0) {
-                        beaverIds.push(numValue);
-                    }
-                }
-            }
-        }
-        // Case 4: Single value (if only one beaver)
-        else if (manualResult && (typeof manualResult === 'string' || typeof manualResult === 'number')) {
-            console.log("📋 Processing as single value");
-            let numValue;
-            if (typeof manualResult === 'string') {
-                // If it starts with 0x, it's hex
-                if (manualResult.startsWith('0x')) {
-                    numValue = parseInt(manualResult, 16);
-                } else {
-                    // Try decimal first
-                    numValue = parseInt(manualResult, 10);
-                    if (isNaN(numValue)) {
-                        numValue = parseInt(manualResult, 16);
-                    }
-                }
-            } else {
-                numValue = Number(manualResult);
-            }
-            if (numValue > 0) {
-                beaverIds.push(numValue);
-            }
-        }
         
-        console.log("📋 Parsed beaver IDs:", beaverIds);
-        
-        // Remove duplicates and filter valid IDs
-        beaverIds = [...new Set(beaverIds)].filter(id => {
-            const isValid = id > 0 && id < 1000000; // Reasonable range
-            if (!isValid) {
-                console.log(`📋 Filtering out invalid beaver ID: ${id}`);
-            }
-            return isValid;
-        });
-        
-        console.log("📋 Final beaver IDs (after deduplication and filtering):", beaverIds);
-        console.log("📋 User address:", formattedAddress);
-        console.log("📋 Number of beavers found:", beaverIds.length);
+        // Remove duplicates using Set
+        beaverIds = [...new Set(beaverIds)];
         
         if (!beaverIds || beaverIds.length === 0) {
-            console.log("📋 No beavers found for user - might not be imported yet");
-            
-            // Check if user has pending rewards (indicates they had beavers before)
-            const totalPendingRewards = await gameContract.calculate_pending_rewards(formattedAddress);
-            const totalPendingBigInt = safeBalanceConvert(totalPendingRewards);
-            
-            if (totalPendingBigInt > 0) {
-                console.log("📋 User has pending rewards but no visible beavers - import may be incomplete");
-                return { 
-                    beavers: [], 
-                    totalRewards: totalPendingBigInt,
-                    importStatus: 'incomplete',
-                    message: 'Your beavers are being imported to the new contract. This may take some time. Please check back later or contact support if the issue persists.'
-                };
-            }
-            
             return { beavers: [], totalRewards: BigInt(0) };
         }
         
@@ -1062,19 +770,14 @@ export async function fetchPlayerInfo(address) {
         const totalPendingRewards = await gameContract.calculate_pending_rewards(formattedAddress);
         const totalPendingBigInt = safeBalanceConvert(totalPendingRewards);
         
-        console.log("📋 Total pending rewards:", totalPendingBigInt.toString());
-        
-        // Fetch details for each beaver individually  
+        // Fetch details for each beaver individually
         const beavers = [];
         let totalHourlyRate = 0;
         
         for (const beaverId of beaverIds) {
             try {
-                console.log(`📋 Fetching details for beaver ${beaverId}...`);
-                
-                // Use simple approach like old code - just call get_beaver directly
+                // Get beaver details - pass address and beaver_id
                 const beaverDetails = await gameContract.get_beaver(formattedAddress, beaverId);
-                console.log(`📋 Beaver ${beaverId} details:`, beaverDetails);
                 
                 const beaver = {
                     id: Number(beaverId),
@@ -1085,28 +788,21 @@ export async function fetchPlayerInfo(address) {
                     pendingRewards: BigInt(0) // Will calculate proportionally below
                 };
                 
-                // Calculate hourly rate for this beaver (matching contract logic)
-                const baseRates = [300, 750, 2250]; // Noob=0, Pro=1, Degen=2
+                // Calculate hourly rate for this beaver
+                const baseRates = [0, 300, 750, 2250]; // Index 0 unused, 1=Noob, 2=Pro, 3=Degen
                 const baseRate = baseRates[beaver.type] || 300;
-                
-                // Level multipliers matching contract (basis points)
-                const levelMultipliers = [1000, 1500, 2250, 3375, 5062]; // Level 1-5
-                const levelMultiplier = levelMultipliers[beaver.level - 1] || 1000;
-                
-                const hourlyRate = (baseRate * levelMultiplier) / 1000; // Convert from basis points
+                const levelMultiplier = Math.pow(1.5, beaver.level - 1);
+                const hourlyRate = baseRate * levelMultiplier;
                 totalHourlyRate += hourlyRate;
                 
                 beaver.hourlyRate = hourlyRate;
                 
-                console.log(`📋 Beaver ${beaverId} processed:`, beaver);
-                
                 beavers.push(beaver);
+                
             } catch (error) {
                 console.error(`❌ Error fetching beaver ${beaverId}:`, error);
             }
         }
-        
-        console.log("📋 Total hourly rate:", totalHourlyRate);
         
         // Distribute total pending rewards proportionally based on hourly rates
         for (const beaver of beavers) {
@@ -1118,8 +814,6 @@ export async function fetchPlayerInfo(address) {
                 beaver.pendingRewards = '0';
             }
         }
-        
-        console.log("📋 Final beavers array:", beavers);
         
         return { beavers, totalRewards: formatBalance(totalPendingBigInt, 18) };
         
@@ -1396,81 +1090,6 @@ export function maintainConnection() {
         } catch (error) {
             console.log('⚠️ Could not set up Braavos listeners:', error);
         }
-    }
-}
-
-// Test function to check beaver import status
-export async function testBeaverImport(address) {
-    try {
-        console.log("🧪 Testing beaver import for address:", address);
-        
-        const gameContract = new Contract(GAME_ABI, GAME_CONTRACT_ADDRESS, provider);
-        
-        // Ensure address is properly formatted
-        let formattedAddress = address;
-        if (typeof address === 'string' && !address.startsWith('0x')) {
-            formattedAddress = '0x' + address;
-        }
-        
-        console.log("🧪 Testing with address:", formattedAddress);
-        console.log("🧪 Contract address:", GAME_CONTRACT_ADDRESS);
-        
-        // Test 1: Check if user has any beavers using manual call
-        try {
-            const manualResult = await provider.callContract({
-                contractAddress: GAME_CONTRACT_ADDRESS,
-                entrypoint: 'get_user_beavers',
-                calldata: [formattedAddress]
-            });
-            console.log("🧪 Manual get_user_beavers result:", manualResult);
-        } catch (error) {
-            console.log("🧪 Manual get_user_beavers error:", error.message);
-        }
-        
-        // Test 2: Try contract method
-        try {
-            const beaverIds = await gameContract.get_user_beavers(formattedAddress);
-            console.log("🧪 Contract get_user_beavers result:", beaverIds);
-        } catch (error) {
-            console.log("🧪 Contract get_user_beavers error:", error.message);
-        }
-        
-        // Test 3: Check specific beaver IDs that should be imported
-        const testBeaverIds = [1, 2, 3, 4, 5]; // Common beaver IDs to test
-        
-        for (const testId of testBeaverIds) {
-            try {
-                const beaverDetails = await gameContract.get_beaver(formattedAddress, testId);
-                console.log(`🧪 Beaver ${testId} details:`, beaverDetails);
-            } catch (error) {
-                console.log(`🧪 Beaver ${testId} not found or error:`, error.message);
-            }
-        }
-        
-        // Test 4: Check pending rewards
-        try {
-            const pendingRewards = await gameContract.calculate_pending_rewards(formattedAddress);
-            console.log("🧪 Pending rewards:", pendingRewards);
-        } catch (error) {
-            console.log("🧪 Pending rewards error:", error.message);
-        }
-        
-        // Test 5: Check game info
-        try {
-            const gameInfo = await gameContract.get_game_info();
-            console.log("🧪 Game info:", gameInfo);
-        } catch (error) {
-            console.log("🧪 Game info error:", error.message);
-        }
-        
-        return {
-            success: true,
-            message: "Test completed - check console for details"
-        };
-        
-    } catch (error) {
-        console.error("🧪 Test error:", error);
-        return { error: error.message };
     }
 }
 
