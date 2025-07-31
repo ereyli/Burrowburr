@@ -866,10 +866,18 @@ export async function fetchPlayerInfo(address) {
         
         console.log("📋 Parsed beaver IDs:", beaverIds);
         
-        // Remove duplicates using Set
-        beaverIds = [...new Set(beaverIds)];
+        // Remove duplicates and filter valid IDs
+        beaverIds = [...new Set(beaverIds)].filter(id => {
+            const isValid = id > 0 && id < 1000000; // Reasonable range
+            if (!isValid) {
+                console.log(`📋 Filtering out invalid beaver ID: ${id}`);
+            }
+            return isValid;
+        });
         
-        console.log("📋 Final beaver IDs (after deduplication):", beaverIds);
+        console.log("📋 Final beaver IDs (after deduplication and filtering):", beaverIds);
+        console.log("📋 User address:", formattedAddress);
+        console.log("📋 Number of beavers found:", beaverIds.length);
         
         if (!beaverIds || beaverIds.length === 0) {
             console.log("📋 No beavers found for user");
@@ -988,8 +996,19 @@ export async function fetchPlayerInfo(address) {
                     }
                 }
                 
-                // Add beaver to the list regardless of owner for now
-                console.log(`📋 Adding beaver ${beaverId} to list`);
+                // Verify beaver ownership - but be more flexible
+                const beaverOwner = beaver.owner || '';
+                const isOwnedByUser = beaverOwner === formattedAddress || beaverOwner === '' || !beaverOwner;
+                
+                console.log(`📋 Beaver ${beaverId} owner: ${beaverOwner}, User: ${formattedAddress}, IsOwned: ${isOwnedByUser}`);
+                
+                if (!isOwnedByUser) {
+                    console.log(`📋 Skipping beaver ${beaverId} - not owned by user`);
+                    continue;
+                }
+                
+                console.log(`📋 Processing beaver ${beaverId} for user ${formattedAddress}`);
+                console.log(`📋 Beaver details:`, beaver);
                 
                 // Calculate hourly rate for this beaver (matching contract logic)
                 const baseRates = [300, 750, 2250]; // Noob=0, Pro=1, Degen=2
