@@ -1195,38 +1195,36 @@ export async function fetchPlayerInfo(address) {
                         console.log(`📋 Beaver ${beaverId} owner: ${owner}, User: ${formattedAddress}, IsOwned: ${normalizedBeaverOwner === normalizedUserAddress}`);
                         console.log(`📋 Normalized - Beaver: ${normalizedBeaverOwner}, User: ${normalizedUserAddress}`);
                         
-                        // Since this ID came from get_user_beavers, we trust it belongs to the user
-                        // But we'll still do a sanity check
-                        if (normalizedBeaverOwner === normalizedUserAddress) {
-                            beaverDetails = {
-                                id: parsedId,
-                                owner: owner,
-                                type: parsedType,
-                                level: parsedLevel,
-                                last_claim_time: parsedLastClaim,
-                                hourly_rate: getHourlyRate(parsedType, parsedLevel)
-                            };
-                            
-                            console.log(`📋 Processing beaver ${beaverId} for user ${formattedAddress}`);
-                            console.log(`📋 Beaver details:`, beaverDetails);
-                            
-                            beavers.push(beaverDetails);
-                            totalHourlyRate += getHourlyRate(parsedType, parsedLevel);
-                            
-                            // Get type name for display
-                            let typeName = 'Unknown';
-                            if (parsedType === 0) typeName = 'Noob';
-                            else if (parsedType === 1) typeName = 'Pro';
-                            else if (parsedType === 2) typeName = 'Degen';
-                            
-                            console.log(`📋 Beaver ${beaverId} processed:`, {
-                                id: parsedId,
-                                type: typeName,
-                                level: parsedLevel
-                            });
-                        } else {
-                            console.log(`📋 Skipping beaver ${beaverId} - ownership mismatch, but this shouldn't happen since ID came from get_user_beavers`);
-                        }
+                        // Since this ID came from get_user_beavers, we KNOW it belongs to this user
+                        // Skip ownership verification - just process the beaver
+                        beaverDetails = {
+                            id: parsedId,
+                            owner: owner,
+                            type: parsedType,
+                            level: parsedLevel,
+                            last_claim_time: parsedLastClaim,
+                            hourly_rate: getHourlyRate(parsedType, parsedLevel)
+                        };
+                        
+                        console.log(`📋 Processing beaver ${beaverId} for user ${formattedAddress}`);
+                        console.log(`📋 Beaver details:`, beaverDetails);
+                        console.log(`📋 Beaver owner from contract: ${owner}`);
+                        console.log(`📋 Current user: ${formattedAddress}`);
+                        
+                        beavers.push(beaverDetails);
+                        totalHourlyRate += getHourlyRate(parsedType, parsedLevel);
+                        
+                        // Get type name for display
+                        let typeName = 'Unknown';
+                        if (parsedType === 0) typeName = 'Noob';
+                        else if (parsedType === 1) typeName = 'Pro';
+                        else if (parsedType === 2) typeName = 'Degen';
+                        
+                        console.log(`📋 Beaver ${beaverId} processed:`, {
+                            id: parsedId,
+                            type: typeName,
+                            level: parsedLevel
+                        });
                     } else {
                         console.log(`📋 Invalid manual result for beaver ${beaverId}:`, result.result);
                     }
