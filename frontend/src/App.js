@@ -1,7 +1,7 @@
 /* eslint-env es2020 */
 /* global BigInt */
 import React, { useState, useEffect, useCallback } from 'react';
-import { CONTRACT_ADDRESSES } from './utils/constants';
+import { CONTRACT_ADDRESSES, BURR_TOKEN_ADDRESS } from './utils/constants';
 import ErrorBoundary from './components/ErrorBoundary';
 import { 
   connectWallet as connectStarknetWallet,
@@ -22,6 +22,7 @@ import {
 import TokenInfo from './components/TokenInfo';
 import ToastContainer, { showToast } from './components/ToastContainer';
 import Header from './components/Header';
+import GameDashboard from './components/GameDashboard';
 import './index.css';
 
 
@@ -33,6 +34,8 @@ function App() {
       window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__.dismissRuntimeErrors();
       // Override the showRuntimeErrors function to prevent any errors from showing
       window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__.showRuntimeErrors = () => {};
+      // Also override the error handler to prevent any errors from being shown
+      window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__.handleRuntimeError = () => {};
     }
 
     // Disable React DevTools error reporting
@@ -50,8 +53,14 @@ function App() {
           message.includes('injectedscript') ||
           message.includes('metamask') ||
           message.includes('extension') ||
-          message.includes('dmkamcknogkgcdfhhbddcghachkejeap')) {
-        // Silently ignore wallet extension errors - no console output at all
+          message.includes('dmkamcknogkgcdfhhbddcghachkejeap') ||
+          message.includes('websocket') ||
+          message.includes('ws://localhost:3000/ws') ||
+          message.includes('connection refused') ||
+          message.includes('keyring') ||
+          message.includes('argentx') ||
+          message.includes('braavos')) {
+        // Silently ignore wallet extension errors and WebSocket errors - no console output at all
         return;
       }
       originalConsoleError.apply(console, args);
@@ -67,7 +76,13 @@ function App() {
           message.includes('injectedscript') ||
           message.includes('metamask') ||
           message.includes('extension') ||
-          message.includes('dmkamcknogkgcdfhhbddcghachkejeap')) {
+          message.includes('dmkamcknogkgcdfhhbddcghachkejeap') ||
+          message.includes('websocket') ||
+          message.includes('ws://localhost:3000/ws') ||
+          message.includes('connection refused') ||
+          message.includes('keyring') ||
+          message.includes('argentx') ||
+          message.includes('braavos')) {
         return;
       }
       originalConsoleWarn.apply(console, args);
@@ -84,7 +99,10 @@ function App() {
             errorMessage.includes('injectedscript') ||
             errorMessage.includes('metamask') ||
             errorMessage.includes('extension') ||
-            errorMessage.includes('dmkamcknogkgcdfhhbddcghachkejeap')) {
+            errorMessage.includes('dmkamcknogkgcdfhhbddcghachkejeap') ||
+            errorMessage.includes('keyring') ||
+            errorMessage.includes('argentx') ||
+            errorMessage.includes('braavos')) {
           event.preventDefault();
           event.stopPropagation();
           event.stopImmediatePropagation();
@@ -882,6 +900,42 @@ function App() {
               Buy $BURR
             </a>
 
+            {/* View Contract Button - Voyager Link */}
+            <a
+              href={`https://voyager.online/contract/${BURR_TOKEN_ADDRESS}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn"
+              style={{
+                background: 'linear-gradient(135deg, #6c757d, #495057)',
+                color: 'white',
+                border: 'none',
+                fontWeight: 'bold',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                fontSize: '14px',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'linear-gradient(135deg, #5a6268, #343a40)';
+                e.target.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'linear-gradient(135deg, #6c757d, #495057)';
+                e.target.style.transform = 'scale(1)';
+              }}
+            >
+              <span style={{ fontSize: '12px' }}>📄</span>
+              View Contract
+            </a>
+
 
 
             <button 
@@ -1004,6 +1058,9 @@ function App() {
 
         {/* Token Info */}
         <TokenInfo />
+
+        {/* Game Dashboard */}
+        <GameDashboard />
 
         <div className="grid grid-2">
           {/* Stake Section */}

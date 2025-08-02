@@ -216,6 +216,11 @@ function saveWalletConnection(connection) {
         if (connection && connection.isConnected && connection.account?.address) {
             localStorage.setItem(WALLET_STORAGE_KEY, 'true');
             localStorage.setItem(WALLET_ADDRESS_KEY, connection.account.address);
+            
+            // Save wallet type for reconnection
+            const walletType = connection.walletType || connection.wallet?.id || 'unknown';
+            localStorage.setItem('burrowgame_wallet_type', walletType);
+            
             console.log('💾 Wallet connection saved to localStorage');
         }
     } catch (error) {
@@ -223,11 +228,31 @@ function saveWalletConnection(connection) {
     }
 }
 
+function getSavedWalletConnection() {
+    try {
+        const walletType = localStorage.getItem('burrowgame_wallet_type');
+        const address = localStorage.getItem(WALLET_ADDRESS_KEY);
+        
+        if (walletType && address) {
+            const connection = {
+                walletType: walletType,
+                address: address
+            };
+            console.log('📋 Retrieved saved wallet connection:', connection);
+            return connection;
+        }
+    } catch (error) {
+        console.error('❌ Failed to get saved wallet connection:', error);
+    }
+    return null;
+}
+
 // Clear wallet connection from localStorage
 function clearWalletConnection() {
     try {
         localStorage.removeItem(WALLET_STORAGE_KEY);
         localStorage.removeItem(WALLET_ADDRESS_KEY);
+        localStorage.removeItem('burrowgame_wallet_type');
         console.log('🗑️ Wallet connection cleared from localStorage');
     } catch (error) {
         console.log('❌ Failed to clear wallet connection:', error);
@@ -256,6 +281,16 @@ export function getSavedWalletAddress() {
 export async function autoReconnectWallet() {
     console.log('🔄 Attempting auto-reconnect...');
     
+    // Check if user recently disconnected (don't auto-reconnect if they did)
+    const lastDisconnectTime = localStorage.getItem('lastDisconnectTime');
+    const currentTime = Date.now();
+    const disconnectThreshold = 5 * 60 * 1000; // 5 minutes
+    
+    if (lastDisconnectTime && (currentTime - parseInt(lastDisconnectTime)) < disconnectThreshold) {
+        console.log('⚠️ User recently disconnected, skipping auto-reconnect');
+        return { isConnected: false, autoReconnect: false };
+    }
+    
     if (!wasWalletConnected()) {
         console.log('⏭️ No previous connection found, skipping auto-reconnect');
         return { isConnected: false, autoReconnect: false };
@@ -279,119 +314,126 @@ export async function autoReconnectWallet() {
             }
         }
 
-        // Try ArgentX first (most common)
-        if (window.starknet_argentX) {
+        // Get saved wallet type to try reconnecting to the same wallet
+        const savedConnection = getSavedWalletConnection();
+        let reconnected = false;
+
+        // Try to reconnect to the previously used wallet
+        if (savedConnection && savedConnection.walletType) {
+            console.log('🔄 Attempting to reconnect to:', savedConnection.walletType);
+            
             try {
-                const wallet = window.starknet_argentX;
-                
-                // Wait for wallet to initialize
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                // Try to enable the wallet first
-                if (!wallet.isConnected) {
-                    await wallet.enable({ showModal: false });
-                }
-                
-                // Check if wallet is unlocked and connected
-                if (!wallet.isLocked && wallet.isConnected && wallet.account?.address) {
-                    console.log('✅ ArgentX auto-reconnected:', wallet.account.address);
+                if (savedConnection.walletType === 'argentX' && window.starknet_argentX) {
+                    const wallet = window.starknet_argentX;
                     
-                    currentConnection = {
-                        account: wallet.account,
-                        wallet: wallet,
-                        isConnected: true
-                    };
+                    // Wait for wallet to initialize
+                    await new Promise(resolve => setTimeout(resolve, 500));
                     
-                    // Save the successful connection
-                    saveWalletConnection(currentConnection);
+                    // Check if wallet is locked first
+                    if (wallet.isLocked) {
+                        console.log('⚠️ ArgentX is locked, skipping auto-reconnect');
+                        return { isConnected: false, autoReconnect: false };
+                    }
                     
-                    return {
-                        wallet: wallet,
-                        account: wallet.account,
-                        address: wallet.account.address,
-                        isConnected: true,
-                        autoReconnect: true
-                    };
+                    // Try to enable the wallet silently
+                    if (!wallet.isConnected) {
+                        await wallet.enable({ showModal: false });
+                    }
+                    
+                    // Check if wallet is connected
+                    if (wallet.isConnected && wallet.account?.address) {
+                        console.log('✅ ArgentX auto-reconnected:', wallet.account.address);
+                        
+                        currentConnection = {
+                            account: wallet.account,
+                            wallet: wallet,
+                            isConnected: true
+                        };
+                        
+                        // Save the successful connection
+                        saveWalletConnection(currentConnection);
+                        
+                        return {
+                            wallet: wallet,
+                            account: wallet.account,
+                            address: wallet.account.address,
+                            isConnected: true,
+                            autoReconnect: true
+                        };
+                    }
+                } else if (savedConnection.walletType === 'braavos' && window.starknet_braavos) {
+                    const wallet = window.starknet_braavos;
+                    
+                    // Wait for wallet to initialize
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // Check if wallet is locked first
+                    if (wallet.isLocked) {
+                        console.log('⚠️ Braavos is locked, skipping auto-reconnect');
+                        return { isConnected: false, autoReconnect: false };
+                    }
+                    
+                    // Try to enable the wallet silently
+                    if (!wallet.isConnected) {
+                        await wallet.enable({ showModal: false });
+                    }
+                    
+                    // Check if wallet is connected
+                    if (wallet.isConnected && wallet.account?.address) {
+                        console.log('✅ Braavos auto-reconnected:', wallet.account.address);
+                        
+                        currentConnection = {
+                            account: wallet.account,
+                            wallet: wallet,
+                            isConnected: true
+                        };
+                        
+                        // Save the successful connection
+                        saveWalletConnection(currentConnection);
+                        
+                        return {
+                            wallet: wallet,
+                            account: wallet.account,
+                            address: wallet.account.address,
+                            isConnected: true,
+                            autoReconnect: true
+                        };
+                    }
                 }
             } catch (error) {
-                console.log('⚠️ ArgentX auto-reconnect failed:', error.message);
-            }
-        }
-
-        // Try Braavos if ArgentX failed
-        if (window.starknet_braavos) {
-            try {
-                const wallet = window.starknet_braavos;
+                console.log('⚠️ Auto-reconnect failed:', error.message);
                 
-                // Wait for wallet to initialize
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                // Try to enable the wallet first
-                if (!wallet.isConnected) {
-                    await wallet.enable({ showModal: false });
+                // Check for specific lock errors
+                if (error.message && (
+                    error.message.includes('KeyRing is locked') ||
+                    error.message.includes('wallet is locked') ||
+                    error.message.includes('locked')
+                )) {
+                    console.log('⚠️ Wallet is locked, skipping auto-reconnect');
+                    return { isConnected: false, autoReconnect: false };
                 }
-                
-                // Check if wallet is unlocked and connected
-                if (!wallet.isLocked && wallet.isConnected && wallet.account?.address) {
-                    console.log('✅ Braavos auto-reconnected:', wallet.account.address);
-                    
-                    currentConnection = {
-                        account: wallet.account,
-                        wallet: wallet,
-                        isConnected: true
-                    };
-                    
-                    // Save the successful connection
-                    saveWalletConnection(currentConnection);
-                    
-                    return {
-                        wallet: wallet,
-                        account: wallet.account,
-                        address: wallet.account.address,
-                        isConnected: true,
-                        autoReconnect: true
-                    };
-                }
-            } catch (error) {
-                console.log('⚠️ Braavos auto-reconnect failed:', error.message);
             }
         }
 
-        // Try Starknetkit silent connection
-        try {
-            const connection = await connect({
-                webWalletUrl: "https://web.argent.xyz",
-                dappName: "BurrowGame",
-                modalMode: "neverAsk", // Don't show modal during auto-reconnect
-                modalTheme: "dark",
-                include: ["argentX", "braavos"],
-                exclude: [],
-                order: ["argentX", "braavos"]
-            });
-
-            if (connection && connection.isConnected && connection.account?.address) {
-                currentConnection = connection;
-                console.log("✅ Starknetkit auto-reconnected:", connection.account.address);
-                
-                return {
-                    wallet: connection.wallet,
-                    account: connection.account,
-                    address: connection.account.address,
-                    isConnected: true,
-                    autoReconnect: true
-                };
-            }
-        } catch (error) {
-            console.log("⚠️ Starknetkit auto-reconnect failed:", error.message);
-        }
-
-        // If all auto-reconnect attempts failed, clear storage
+        // If auto-reconnect failed, clear storage and return
         console.log('⚠️ Auto-reconnect failed, clearing saved connection');
         clearWalletConnection();
         return { isConnected: false, autoReconnect: false };
 
     } catch (error) {
         console.error('❌ Auto-reconnect error:', error);
+        
+        // Check for specific lock errors
+        if (error.message && (
+            error.message.includes('KeyRing is locked') ||
+            error.message.includes('wallet is locked') ||
+            error.message.includes('locked')
+        )) {
+            console.log('⚠️ Wallet is locked, clearing connection');
+            clearWalletConnection();
+            return { isConnected: false, autoReconnect: false };
+        }
+        
         clearWalletConnection();
         return { isConnected: false, autoReconnect: false };
     }
@@ -517,13 +559,21 @@ export async function connectWallet() {
         console.log("Starting wallet connection...");
         
         // Check if wallet extensions are available
+        console.log("🔍 Checking wallet extensions...");
+        console.log("window.starknet_argentX:", !!window.starknet_argentX);
+        console.log("window.starknet_braavos:", !!window.starknet_braavos);
+        console.log("window.starknet:", !!window.starknet);
+        
         if (!window.starknet_argentX && !window.starknet_braavos && !window.starknet) {
             throw new Error('No Starknet wallets found. Please install ArgentX or Braavos wallet extension.');
         }
 
-        // Method 1: Use Starknetkit modal first (better UX)
+        // Use starknetkit for wallet connection
+        console.log("🔄 Using starknetkit for wallet connection...");
+        
         try {
-            console.log("Opening wallet selection modal...");
+            // Clear any saved connection to force fresh selection
+            clearWalletConnection();
             
             const connection = await connect({
                 webWalletUrl: "https://web.argent.xyz",
@@ -535,18 +585,175 @@ export async function connectWallet() {
                 order: ["argentX", "braavos"]
             });
 
-            if (connection && connection.isConnected && connection.account?.address) {
-                currentConnection = connection;
-                console.log("✅ Successfully connected with Starknetkit:", connection.account.address);
+            console.log("📊 Connection result:", connection);
+            console.log("📊 Connection type:", typeof connection);
+            console.log("📊 Connection keys:", connection ? Object.keys(connection) : 'null');
+            
+            // Safe JSON stringify for BigInt values
+            const safeStringify = (obj) => {
+                return JSON.stringify(obj, (key, value) => {
+                    if (typeof value === 'bigint') {
+                        return value.toString();
+                    }
+                    return value;
+                }, 2);
+            };
+            
+            console.log("📊 Connection stringified:", safeStringify(connection));
+
+                        // Check if connection is a valid object with required properties
+            if (connection && typeof connection === 'object') {
+                // Parse starknetkit connection structure
+                const wallet = connection.wallet;
+                const connector = connection.connector;
+                const connectorData = connection.connectorData;
                 
-                // Save connection to localStorage
-                saveWalletConnection(connection);
+                console.log("📊 Parsed wallet:", wallet);
+                console.log("📊 Parsed connector:", connector);
+                console.log("📊 Parsed connectorData:", connectorData);
                 
-                return {
-                    wallet: connection.wallet,
-                    account: connection.account,
-                    address: connection.account.address,
-                    isConnected: true
+                // Determine which wallet was selected from starknetkit
+                let selectedWalletType = 'unknown';
+                if (wallet?.id) {
+                    selectedWalletType = wallet.id;
+                    console.log("🎯 User selected wallet type:", selectedWalletType);
+                } else if (connector?._wallet?.id) {
+                    selectedWalletType = connector._wallet.id;
+                    console.log("🎯 User selected wallet type (from connector):", selectedWalletType);
+                }
+                
+                // Check if wallet is connected and has account
+                const isConnected = wallet?.isConnected || false;
+                const account = wallet?.account;
+                const address = account?.address;
+                
+                console.log("📊 Parsed isConnected:", isConnected);
+                console.log("📊 Parsed account:", account);
+                console.log("📊 Parsed address:", address);
+                
+                // If we have connectorData with account but wallet is not connected, try to enable it
+                if (connectorData?.account && !isConnected) {
+                    console.log("🔄 Attempting to enable wallet with account from connectorData...");
+                    
+                    try {
+                        // Determine which wallet was selected based on connector data
+                        let selectedWallet = null;
+                        let walletType = 'unknown';
+                        
+                        // Use the selected wallet type from starknetkit
+                        if (selectedWalletType === 'argentX' && window.starknet_argentX) {
+                            try {
+                                await window.starknet_argentX.enable();
+                                if (window.starknet_argentX.isConnected && window.starknet_argentX.account?.address) {
+                                    selectedWallet = window.starknet_argentX;
+                                    walletType = 'argentX';
+                                    console.log("✅ Successfully enabled ArgentX wallet");
+                                }
+                            } catch (e) {
+                                console.log("❌ ArgentX enable failed:", e.message);
+                            }
+                        } else if (selectedWalletType === 'braavos' && window.starknet_braavos) {
+                            try {
+                                await window.starknet_braavos.enable();
+                                if (window.starknet_braavos.isConnected && window.starknet_braavos.account?.address) {
+                                    selectedWallet = window.starknet_braavos;
+                                    walletType = 'braavos';
+                                    console.log("✅ Successfully enabled Braavos wallet");
+                                }
+                            } catch (e) {
+                                console.log("❌ Braavos enable failed:", e.message);
+                            }
+                        } else {
+                            // Fallback: try both wallets if selection is unclear
+                            console.log("🔄 Selection unclear, trying both wallets...");
+                            
+                            if (window.starknet_argentX) {
+                                try {
+                                    await window.starknet_argentX.enable();
+                                    if (window.starknet_argentX.isConnected && window.starknet_argentX.account?.address === connectorData.account) {
+                                        selectedWallet = window.starknet_argentX;
+                                        walletType = 'argentX';
+                                        console.log("✅ Found ArgentX wallet with matching account");
+                                    }
+                                } catch (e) {
+                                    console.log("❌ ArgentX enable failed:", e.message);
+                                }
+                            }
+                            
+                            if (!selectedWallet && window.starknet_braavos) {
+                                try {
+                                    await window.starknet_braavos.enable();
+                                    if (window.starknet_braavos.isConnected && window.starknet_braavos.account?.address === connectorData.account) {
+                                        selectedWallet = window.starknet_braavos;
+                                        walletType = 'braavos';
+                                        console.log("✅ Found Braavos wallet with matching account");
+                                    }
+                                } catch (e) {
+                                    console.log("❌ Braavos enable failed:", e.message);
+                                }
+                            }
+                        }
+                        
+                        if (selectedWallet && selectedWallet.isConnected && selectedWallet.account?.address) {
+                            console.log("✅ Successfully enabled wallet:", selectedWallet.account.address, "Type:", walletType);
+                            
+                            currentConnection = {
+                                account: selectedWallet.account,
+                                wallet: selectedWallet,
+                                isConnected: true
+                            };
+                            
+                            // Save connection to localStorage with correct wallet type
+                            saveWalletConnection({
+                                ...currentConnection,
+                                walletType: walletType
+                            });
+                            
+                            return {
+                                wallet: selectedWallet,
+                                account: selectedWallet.account,
+                                address: selectedWallet.account.address,
+                                isConnected: true
+                            };
+                        } else {
+                            console.log("❌ No matching wallet found for account:", connectorData.account);
+                        }
+                    } catch (enableError) {
+                        console.log("❌ Failed to enable wallet:", enableError.message);
+                    }
+                }
+
+                if (isConnected && address) {
+                    currentConnection = connection;
+                    console.log("✅ Successfully connected with Starknetkit:", address);
+                    
+                    // Save connection to localStorage with wallet type
+                    const walletType = wallet?.id || 'unknown';
+                    saveWalletConnection({
+                        ...connection,
+                        walletType: walletType
+                    });
+                    
+                    return {
+                        wallet: wallet,
+                        account: account,
+                        address: address,
+                        isConnected: true
+                    };
+                                } else {
+                    console.log("⚠️ Starknetkit connection object exists but not properly connected");
+                    console.log("⚠️ isConnected:", isConnected);
+                    console.log("⚠️ hasAddress:", !!address);
+                    return { 
+                        isConnected: false, 
+                        error: null // Silent failure - no error message to user
+                    };
+                }
+            } else {
+                console.log("⚠️ Starknetkit returned invalid connection object:", connection);
+                return { 
+                    isConnected: false, 
+                    error: null // Silent failure - no error message to user
                 };
             }
         } catch (error) {
@@ -564,120 +771,7 @@ export async function connectWallet() {
                 };
             }
             
-            // If modal was cancelled or failed, try direct connections silently
-        }
-
-        // Method 2: Try ArgentX directly (fallback, silent)
-        if (window.starknet_argentX) {
-            try {
-                console.log("Trying direct ArgentX connection...");
-                const wallet = window.starknet_argentX;
-                
-                // Skip silently if locked
-                if (!wallet.isLocked) {
-                    await wallet.enable();
-                    
-                    if (wallet.isConnected && wallet.account?.address) {
-                        console.log("✅ Successfully connected with ArgentX directly:", wallet.account.address);
-                        
-                        currentConnection = {
-                            account: wallet.account,
-                            wallet: wallet,
-                            isConnected: true
-                        };
-                        
-                        // Save connection to localStorage
-                        saveWalletConnection(currentConnection);
-                        
-                        return {
-                            wallet: wallet,
-                            account: wallet.account,
-                            address: wallet.account.address,
-                            isConnected: true
-                        };
-                    }
-                }
-            } catch (error) {
-                console.log("❌ Direct ArgentX connection failed:", error.message);
-                
-                // Check for wallet locked errors
-                if (error.message && (
-                    error.message.includes('KeyRing is locked') ||
-                    error.message.includes('wallet is locked') ||
-                    error.message.includes('chrome-extension')
-                )) {
-                    return { 
-                        isConnected: false, 
-                        error: 'ArgentX wallet is locked! Please unlock your wallet and try again.' 
-                    };
-                }
-            }
-        }
-
-        // Method 3: Try Braavos directly (fallback, silent)
-        if (window.starknet_braavos) {
-            try {
-                console.log("Trying direct Braavos connection...");
-                const wallet = window.starknet_braavos;
-                
-                // Skip silently if locked  
-                if (!wallet.isLocked) {
-                    await wallet.enable();
-                    
-                    if (wallet.isConnected && wallet.account?.address) {
-                        console.log("✅ Successfully connected with Braavos directly:", wallet.account.address);
-                        
-                        currentConnection = {
-                            account: wallet.account,
-                            wallet: wallet,
-                            isConnected: true
-                        };
-                        
-                        // Save connection to localStorage
-                        saveWalletConnection(currentConnection);
-                        
-                        return {
-                            wallet: wallet,
-                            account: wallet.account,
-                            address: wallet.account.address,
-                            isConnected: true
-                        };
-                    }
-                }
-            } catch (error) {
-                console.log("❌ Direct Braavos connection failed:", error.message);
-                
-                // Check for wallet locked errors
-                if (error.message && (
-                    error.message.includes('KeyRing is locked') ||
-                    error.message.includes('wallet is locked') ||
-                    error.message.includes('chrome-extension')
-                )) {
-                    return { 
-                        isConnected: false, 
-                        error: 'Braavos wallet is locked! Please unlock your wallet and try again.' 
-                    };
-                }
-            }
-        }
-
-        // Check if wallets exist
-        let hasWallets = false;
-        
-        if (window.starknet_argentX) {
-            hasWallets = true;
-        }
-        
-        if (window.starknet_braavos) {
-            hasWallets = true;
-        }
-        
-        // Only throw error if no wallets are found
-        if (!hasWallets) {
-            throw new Error('No Starknet wallets found. Please install ArgentX or Braavos wallet extension.');
-        } else {
-            // If wallets exist but connection failed (maybe locked), return silent failure
-            console.log("⚠️ No wallets could be connected (possibly locked or user cancelled)");
+            // If modal was cancelled, return silent failure
             return { 
                 isConnected: false, 
                 error: null // Silent failure - no error message to user
@@ -687,7 +781,6 @@ export async function connectWallet() {
     } catch (error) {
         console.error("🚨 Wallet connection error:", error);
         
-        // Don't propagate uncaught errors - return controlled error response
         let errorMessage = error.message;
         
         if (error.message.includes('KeyRing is locked') || error.message.includes('locked')) {
@@ -696,11 +789,8 @@ export async function connectWallet() {
             errorMessage = 'Connection rejected. Please approve the connection in your wallet.';
         } else if (error.message.includes('not found') || error.message.includes('install')) {
             errorMessage = 'Wallet not found. Please install ArgentX or Braavos extension.';
-        } else if (error.message.includes('Failed to connect to MetaMask')) {
-            errorMessage = 'Wallet connection failed. Please make sure your wallet is unlocked and try again.';
         }
         
-        // Return error response instead of throwing
         return { 
             isConnected: false, 
             error: errorMessage 
@@ -716,6 +806,9 @@ export async function disconnectWallet() {
         
         // Clear saved connection from localStorage
         clearWalletConnection();
+        
+        // Record disconnect time to prevent auto-reconnect
+        localStorage.setItem('lastDisconnectTime', Date.now().toString());
         
         return { isConnected: false };
     } catch (error) {
@@ -1343,14 +1436,112 @@ export async function fetchGameInfo() {
 // Fetch game analytics from contract
 export async function fetchGameAnalytics() {
     try {
-        console.log('🔍 Fetching game analytics...');
-        const gameContract = new Contract(GAME_ABI, GAME_CONTRACT_ADDRESS, provider);
-        const analytics = await gameContract.get_game_analytics();
+        console.log('🔍 Fetching game analytics from contract:', GAME_CONTRACT_ADDRESS);
         
-        console.log('📊 Analytics received:', analytics);
-        return analytics;
+        // Get active users count separately
+        console.log('🔍 Getting active users count...');
+        let active_users = 0;
+        try {
+            const activeUsersResult = await provider.callContract({
+                contractAddress: GAME_CONTRACT_ADDRESS,
+                entrypoint: 'get_active_users_count',
+                calldata: []
+            });
+            active_users = parseInt(activeUsersResult);
+            console.log('📊 Active users from get_active_users_count:', active_users);
+        } catch (error) {
+            console.log('❌ get_active_users_count failed:', error.message);
+        }
+        
+        // Get beaver type stats separately
+        console.log('🔍 Getting beaver type stats...');
+        let noob_count = 0;
+        let pro_count = 0;
+        let degen_count = 0;
+        try {
+            const beaverTypesResult = await provider.callContract({
+                contractAddress: GAME_CONTRACT_ADDRESS,
+                entrypoint: 'get_beaver_type_stats',
+                calldata: []
+            });
+            
+            if (Array.isArray(beaverTypesResult) && beaverTypesResult.length === 3) {
+                noob_count = parseInt(beaverTypesResult[0]);
+                pro_count = parseInt(beaverTypesResult[1]);
+                degen_count = parseInt(beaverTypesResult[2]);
+                console.log('📊 Beaver type stats from get_beaver_type_stats:');
+                console.log('  Noob count:', noob_count);
+                console.log('  Pro count:', pro_count);
+                console.log('  Degen count:', degen_count);
+            }
+        } catch (error) {
+            console.log('❌ get_beaver_type_stats failed:', error.message);
+        }
+        
+        // Call get_game_analytics for other data
+        console.log('🔍 Getting game analytics...');
+        const analyticsResult = await provider.callContract({
+            contractAddress: GAME_CONTRACT_ADDRESS,
+            entrypoint: 'get_game_analytics',
+            calldata: []
+        });
+        
+        console.log('📊 Raw analytics result:', analyticsResult);
+        console.log('📊 Result type:', typeof analyticsResult);
+        console.log('📊 Result length:', analyticsResult?.length);
+        
+        if (Array.isArray(analyticsResult) && analyticsResult.length >= 9) {
+            console.log('📊 Raw values from contract:');
+            console.log('  [0] total_beavers_staked:', analyticsResult[0], '(hex:', analyticsResult[0].toString(16), ')');
+            console.log('  [1] total_burr_claimed:', analyticsResult[1]);
+            console.log('  [2] total_strk_collected:', analyticsResult[2]);
+            console.log('  [3] total_burr_burned:', analyticsResult[3]);
+            console.log('  [4] noob_count_from_analytics:', analyticsResult[4], '(hex:', analyticsResult[4].toString(16), ')');
+            console.log('  [5] pro_count_from_analytics:', analyticsResult[5], '(hex:', analyticsResult[5].toString(16), ')');
+            console.log('  [6] degen_count_from_analytics:', analyticsResult[6], '(hex:', analyticsResult[6].toString(16), ')');
+            console.log('  [7] active_users_from_analytics:', analyticsResult[7], '(hex:', analyticsResult[7].toString(16), ')');
+            console.log('  [8] total_upgrades:', analyticsResult[8], '(hex:', analyticsResult[8].toString(16), ')');
+            
+            // Parse u256 values (they come as [low, high] arrays)
+            const parseU256 = (value) => {
+                if (Array.isArray(value) && value.length === 2) {
+                    const low = BigInt(value[0]);
+                    const high = BigInt(value[1]);
+                    return low + (high << 128n);
+                }
+                return BigInt(value || 0);
+            };
+            
+            const analytics = {
+                total_beavers_staked: parseInt(analyticsResult[0]),
+                total_burr_claimed: parseU256(analyticsResult[1]),
+                total_strk_collected: parseU256(analyticsResult[2]),
+                total_burr_burned: parseU256(analyticsResult[3]),
+                noob_count: noob_count, // Use the value from get_beaver_type_stats
+                pro_count: pro_count, // Use the value from get_beaver_type_stats
+                degen_count: degen_count, // Use the value from get_beaver_type_stats
+                active_users: active_users, // Use the value from get_active_users_count
+                total_upgrades: parseInt(analyticsResult[8])
+            };
+            
+            console.log('📊 Parsed analytics:', analytics);
+            console.log('📊 Total beavers staked:', analytics.total_beavers_staked, '(hex:', analytics.total_beavers_staked.toString(16), ')');
+            console.log('📊 Noob count (from get_beaver_type_stats):', analytics.noob_count, '(hex:', analytics.noob_count.toString(16), ')');
+            console.log('📊 Pro count (from get_beaver_type_stats):', analytics.pro_count, '(hex:', analytics.pro_count.toString(16), ')');
+            console.log('📊 Degen count (from get_beaver_type_stats):', analytics.degen_count, '(hex:', analytics.degen_count.toString(16), ')');
+            console.log('📊 Active users (from get_active_users_count):', analytics.active_users, '(hex:', analytics.active_users.toString(16), ')');
+            console.log('📊 Total upgrades:', analytics.total_upgrades, '(hex:', analytics.total_upgrades.toString(16), ')');
+            
+            return analytics;
+        } else {
+            console.log('⚠️ Unexpected analytics result format:', analyticsResult);
+            console.log('⚠️ Expected array with 9+ elements, got:', analyticsResult?.length || 'undefined');
+            return null;
+        }
     } catch (error) {
         console.error('❌ Analytics fetch error:', error);
+        console.error('❌ Error details:', error.message);
+        console.error('❌ Error stack:', error.stack);
         return null;
     }
 }
