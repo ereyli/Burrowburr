@@ -33,8 +33,8 @@ const GameDashboard = () => {
   useEffect(() => {
     fetchAnalytics();
     
-    // Update every hour or on page refresh
-    const interval = setInterval(fetchAnalytics, 3600000); // 1 hour
+    // Update every 5 minutes or on page refresh
+    const interval = setInterval(fetchAnalytics, 300000); // 5 minutes
     
     return () => clearInterval(interval);
   }, []);
@@ -75,6 +75,63 @@ const GameDashboard = () => {
     }
   };
 
+  // Mining timeline calculation
+  const calculateMiningTimeline = () => {
+    if (!analytics) return null;
+
+    const TOTAL_SUPPLY = 2100000000; // 2.1B total supply
+    const LP_RESERVE = 100000000; // 100M for LP
+    const MINING_SUPPLY = TOTAL_SUPPLY - LP_RESERVE; // 2B for mining
+
+    // Mining start date: August 30, 2024 (4 days ago)
+    const MINING_START_DATE = new Date('2024-08-30T00:00:00Z');
+    const now = new Date();
+    const daysSinceStart = (now - MINING_START_DATE) / (1000 * 60 * 60 * 24);
+
+    // Hourly rates for each beaver type (level 1)
+    const NOOB_HOURLY_RATE = 300; // 300 BURR/hour
+    const PRO_HOURLY_RATE = 750; // 750 BURR/hour  
+    const DEGEN_HOURLY_RATE = 2250; // 2250 BURR/hour
+
+    // Calculate current daily distribution
+    const currentDailyDistribution = 
+      (Number(analytics.noob_count || 0) * NOOB_HOURLY_RATE * 24) +
+      (Number(analytics.pro_count || 0) * PRO_HOURLY_RATE * 24) +
+      (Number(analytics.degen_count || 0) * DEGEN_HOURLY_RATE * 24);
+
+    // Calculate total earned so far (4 days of mining with current beaver count)
+    const totalEarned = currentDailyDistribution * 4; // 4 days since start
+
+    // Calculate already distributed tokens from contract
+    const DECIMALS = 18;
+    const alreadyClaimed = Number(analytics.total_burr_claimed || 0) / Math.pow(10, DECIMALS);
+    const alreadyBurned = Number(analytics.total_burr_burned || 0) / Math.pow(10, DECIMALS);
+    const alreadyDistributed = alreadyClaimed + alreadyBurned;
+    
+    // Calculate remaining supply for mining
+    const remainingSupply = MINING_SUPPLY - alreadyDistributed;
+    
+    // Calculate days remaining based on current daily distribution
+    const daysRemaining = currentDailyDistribution > 0 ? (remainingSupply / currentDailyDistribution) : 0;
+    
+    // Calculate estimated end date
+    const estimatedEndDate = daysRemaining > 0 
+      ? new Date(Date.now() + daysRemaining * 24 * 60 * 60 * 1000)
+      : null;
+
+    return {
+      dailyDistribution: currentDailyDistribution,
+      remainingSupply,
+      daysRemaining,
+      estimatedEndDate,
+      alreadyDistributed,
+      alreadyClaimed,
+      alreadyBurned,
+      totalEarned,
+      daysSinceStart: Math.floor(daysSinceStart)
+    };
+  };
+
   if (loading) {
     return (
       <div className="dashboard-card">
@@ -107,6 +164,8 @@ const GameDashboard = () => {
   if (!analytics) {
     return null;
   }
+
+  const miningTimeline = calculateMiningTimeline();
 
   return (
     <div className="dashboard-card">
@@ -202,7 +261,59 @@ const GameDashboard = () => {
             </div>
           </div>
         </div>
-        
+
+        {/* Mining Timeline */}
+        <div className="dashboard-section dashboard-section-purple">
+          <h3 style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            marginBottom: '20px',
+            color: 'var(--accent-purple)'
+          }}>
+            <span>⏰</span>
+            Mining Timeline
+          </h3>
+          
+          <div style={{ 
+            fontSize: '12px', 
+            color: 'var(--text-light)', 
+            marginBottom: '15px',
+            textAlign: 'center',
+            fontStyle: 'italic'
+          }}>
+            More beavers sold or levels upgraded = faster circulation of total supply
+          </div>
+          
+          <div style={{ display: 'grid', gap: '15px' }}>
+            <div className="dashboard-stat-card">
+              <div className="dashboard-stat-label">
+                Total Earned
+              </div>
+              <div className="dashboard-stat-value green">
+                {miningTimeline ? formatNumber(miningTimeline.totalEarned) + ' BURR' : '0 BURR'}
+              </div>
+            </div>
+            
+            <div className="dashboard-stat-card">
+              <div className="dashboard-stat-label">
+                Daily Distribution
+              </div>
+              <div className="dashboard-stat-value orange">
+                {miningTimeline ? formatNumber(miningTimeline.dailyDistribution) + ' BURR' : '0 BURR'}
+              </div>
+            </div>
+            
+            <div className="dashboard-stat-card">
+              <div className="dashboard-stat-label">
+                Days Remaining
+              </div>
+              <div className="dashboard-stat-value yellow">
+                {miningTimeline ? Math.ceil(miningTimeline.daysRemaining) + ' days' : '∞'}
+              </div>
+            </div>
+          </div>
+        </div>
 
       </div>
       
