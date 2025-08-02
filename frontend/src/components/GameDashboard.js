@@ -174,10 +174,10 @@ const GameDashboard = () => {
         alignItems: 'center', 
         gap: '10px', 
         marginBottom: '30px',
-        textAlign: 'center',
-        justifyContent: 'center'
+        textAlign: 'left',
+        justifyContent: 'flex-start',
+        color: 'var(--accent-orange)'
       }}>
-        <span style={{ fontSize: '1.5rem' }}>🎮</span>
         Game Statistics
       </h2>
       
@@ -192,7 +192,6 @@ const GameDashboard = () => {
             marginBottom: '20px',
             color: 'var(--accent-orange)'
           }}>
-            <span>🦫</span>
             Beaver Statistics
           </h3>
           
@@ -210,7 +209,7 @@ const GameDashboard = () => {
                               <div className="dashboard-stat-label">
                   Active Users
                 </div>
-              <div className="dashboard-stat-value green">
+              <div className="dashboard-stat-value orange">
                 {analytics.active_users?.toLocaleString() || '0'}
               </div>
             </div>
@@ -220,15 +219,14 @@ const GameDashboard = () => {
         </div>
         
         {/* Beaver Türleri */}
-        <div className="dashboard-section dashboard-section-blue">
+        <div className="dashboard-section dashboard-section-orange">
           <h3 style={{ 
             display: 'flex', 
             alignItems: 'center', 
             gap: '8px',
             marginBottom: '20px',
-            color: 'var(--accent-blue)'
+            color: 'var(--accent-orange)'
           }}>
-            <span>📊</span>
             Beaver Types
           </h3>
           
@@ -237,7 +235,7 @@ const GameDashboard = () => {
                               <div className="dashboard-stat-label">
                   Noob Beavers
                 </div>
-              <div className="dashboard-stat-value green">
+              <div className="dashboard-stat-value orange">
                 {analytics.noob_count?.toLocaleString() || '0'}
               </div>
             </div>
@@ -246,7 +244,7 @@ const GameDashboard = () => {
                               <div className="dashboard-stat-label">
                   Pro Beavers
                 </div>
-              <div className="dashboard-stat-value blue">
+              <div className="dashboard-stat-value orange">
                 {analytics.pro_count?.toLocaleString() || '0'}
               </div>
             </div>
@@ -255,7 +253,7 @@ const GameDashboard = () => {
                               <div className="dashboard-stat-label">
                   Degen Beavers
                 </div>
-              <div className="dashboard-stat-value purple">
+              <div className="dashboard-stat-value orange">
                 {analytics.degen_count?.toLocaleString() || '0'}
               </div>
             </div>
@@ -263,23 +261,23 @@ const GameDashboard = () => {
         </div>
 
         {/* Mining Timeline */}
-        <div className="dashboard-section dashboard-section-purple">
+        <div className="dashboard-section dashboard-section-orange">
           <h3 style={{ 
             display: 'flex', 
             alignItems: 'center', 
             gap: '8px',
             marginBottom: '20px',
-            color: 'var(--accent-purple)'
+            color: 'var(--accent-orange)',
+            justifyContent: 'flex-start'
           }}>
-            <span>⏰</span>
-            Mining Timeline
+            Mining Statistics
           </h3>
           
           <div style={{ 
             fontSize: '12px', 
             color: 'var(--text-light)', 
             marginBottom: '15px',
-            textAlign: 'center',
+            textAlign: 'left',
             fontStyle: 'italic'
           }}>
             More beavers sold or levels upgraded = faster circulation of total supply
@@ -287,7 +285,7 @@ const GameDashboard = () => {
           
           <div style={{ display: 'grid', gap: '15px' }}>
             <div className="dashboard-stat-card">
-              <div className="dashboard-stat-label">
+              <div className="dashboard-stat-label" style={{ color: 'var(--text-light)' }}>
                 Total Earned
               </div>
               <div className="dashboard-stat-value green">
@@ -296,19 +294,19 @@ const GameDashboard = () => {
             </div>
             
             <div className="dashboard-stat-card">
-              <div className="dashboard-stat-label">
+              <div className="dashboard-stat-label" style={{ color: 'var(--text-light)' }}>
                 Daily Distribution
               </div>
-              <div className="dashboard-stat-value orange">
+              <div className="dashboard-stat-value green">
                 {miningTimeline ? formatNumber(miningTimeline.dailyDistribution) + ' BURR' : '0 BURR'}
               </div>
             </div>
             
             <div className="dashboard-stat-card">
-              <div className="dashboard-stat-label">
+              <div className="dashboard-stat-label" style={{ color: 'var(--text-light)' }}>
                 Days Remaining
               </div>
-              <div className="dashboard-stat-value yellow">
+              <div className="dashboard-stat-value green">
                 {miningTimeline ? Math.ceil(miningTimeline.daysRemaining) + ' days' : '∞'}
               </div>
             </div>

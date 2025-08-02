@@ -1370,21 +1370,21 @@ function App() {
                   <BeaverImage beaverType={1} size="16px" />
                   Noob:
                 </span>
-                <strong style={{color: 'var(--accent-orange)'}}>200K $BURR</strong>
+                <strong style={{color: 'var(--accent-orange)'}}>240K $BURR</strong>
               </div>
               <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <BeaverImage beaverType={2} size="16px" />
                   Pro:
                 </span>
-                <strong style={{color: 'var(--accent-orange)'}}>400K $BURR</strong>
+                <strong style={{color: 'var(--accent-orange)'}}>480K $BURR</strong>
               </div>
               <div style={{display: 'flex', justifyContent: 'space-between'}}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <BeaverImage beaverType={3} size="16px" />
                   Degen:
                 </span>
-                <strong style={{color: 'var(--accent-orange)'}}>1.02M $BURR</strong>
+                <strong style={{color: 'var(--accent-orange)'}}>1.22M $BURR</strong>
               </div>
             </div>
           </div>
