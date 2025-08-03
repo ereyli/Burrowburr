@@ -33,10 +33,29 @@ const GameDashboard = () => {
   useEffect(() => {
     fetchAnalytics();
     
-    // Update every 5 minutes or on page refresh
-    const interval = setInterval(fetchAnalytics, 300000); // 5 minutes
+    // Update every 10 minutes
+    const interval = setInterval(fetchAnalytics, 600000); // 10 minutes (600,000 ms)
     
-    return () => clearInterval(interval);
+    // Refresh data when page becomes visible (user returns to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchAnalytics();
+      }
+    };
+    
+    // Refresh data when window gains focus
+    const handleFocus = () => {
+      fetchAnalytics();
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const formatNumber = (num) => {
@@ -75,7 +94,7 @@ const GameDashboard = () => {
     }
   };
 
-  // Mining timeline calculation
+  // Mining timeline calculation with real contract start time
   const calculateMiningTimeline = () => {
     if (!analytics) return null;
 
@@ -83,8 +102,9 @@ const GameDashboard = () => {
     const LP_RESERVE = 100000000; // 100M for LP
     const MINING_SUPPLY = TOTAL_SUPPLY - LP_RESERVE; // 2B for mining
 
-    // Mining start date: August 30, 2024 (4 days ago)
-    const MINING_START_DATE = new Date('2024-08-30T00:00:00Z');
+    // Use real contract start time from contract
+    const CONTRACT_START_TIME = 1753915348; // Unix timestamp from contract
+    const MINING_START_DATE = new Date(CONTRACT_START_TIME * 1000);
     const now = new Date();
     const daysSinceStart = (now - MINING_START_DATE) / (1000 * 60 * 60 * 24);
 
@@ -93,14 +113,15 @@ const GameDashboard = () => {
     const PRO_HOURLY_RATE = 750; // 750 BURR/hour  
     const DEGEN_HOURLY_RATE = 2250; // 2250 BURR/hour
 
-    // Calculate current daily distribution
+    // Calculate current daily distribution based on actual beaver counts
     const currentDailyDistribution = 
       (Number(analytics.noob_count || 0) * NOOB_HOURLY_RATE * 24) +
       (Number(analytics.pro_count || 0) * PRO_HOURLY_RATE * 24) +
       (Number(analytics.degen_count || 0) * DEGEN_HOURLY_RATE * 24);
 
-    // Calculate total earned so far (4 days of mining with current beaver count)
-    const totalEarned = currentDailyDistribution * 4; // 4 days since start
+    // Calculate total earned so far based on actual days since start
+    const actualDaysSinceStart = Math.max(0, daysSinceStart);
+    const totalEarned = currentDailyDistribution * actualDaysSinceStart;
 
     // Calculate already distributed tokens from contract
     const DECIMALS = 18;
@@ -119,6 +140,12 @@ const GameDashboard = () => {
       ? new Date(Date.now() + daysRemaining * 24 * 60 * 60 * 1000)
       : null;
 
+    // Calculate real-time hourly rate
+    const currentHourlyRate = 
+      (Number(analytics.noob_count || 0) * NOOB_HOURLY_RATE) +
+      (Number(analytics.pro_count || 0) * PRO_HOURLY_RATE) +
+      (Number(analytics.degen_count || 0) * DEGEN_HOURLY_RATE);
+
     return {
       dailyDistribution: currentDailyDistribution,
       remainingSupply,
@@ -128,7 +155,9 @@ const GameDashboard = () => {
       alreadyClaimed,
       alreadyBurned,
       totalEarned,
-      daysSinceStart: Math.floor(daysSinceStart)
+      daysSinceStart: Math.floor(actualDaysSinceStart),
+      currentHourlyRate,
+      lastUpdate: new Date().toLocaleTimeString()
     };
   };
 
@@ -169,17 +198,31 @@ const GameDashboard = () => {
 
   return (
     <div className="dashboard-card">
-      <h2 style={{ 
+      <div style={{ 
         display: 'flex', 
+        justifyContent: 'space-between', 
         alignItems: 'center', 
-        gap: '10px', 
-        marginBottom: '30px',
-        textAlign: 'left',
-        justifyContent: 'flex-start',
-        color: 'var(--accent-orange)'
+        marginBottom: '30px' 
       }}>
-        Game Statistics
-      </h2>
+        <h2 style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '10px', 
+          textAlign: 'left',
+          justifyContent: 'flex-start',
+          color: 'var(--accent-orange)',
+          margin: 0
+        }}>
+          Game Statistics
+        </h2>
+        <div style={{ 
+          fontSize: '12px', 
+          color: 'var(--text-light)', 
+          fontStyle: 'italic' 
+        }}>
+          Updates every 10 minutes • Last: {miningTimeline?.lastUpdate || '--'}
+        </div>
+      </div>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
         
