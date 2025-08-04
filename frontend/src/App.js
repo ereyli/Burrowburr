@@ -265,18 +265,48 @@ function App() {
       console.log('📊 Beaver details:', playerInfo.beavers);
       
       if (playerInfo.beavers && playerInfo.beavers.length > 0) {
-        setHasStaked(true);
-        setBeavers(playerInfo.beavers);
+        // Filter out legacy beaver #1 for all users
+        const validBeavers = playerInfo.beavers.filter(beaver => {
+          if (beaver.id === 1) {
+            console.log('🚫 Filtering out legacy beaver #1 for all users');
+            return false;
+          }
+          return true;
+        });
         
-        // Use first beaver for single beaver display compatibility
-        const firstBeaver = playerInfo.beavers[0];
-        setBeaverType(firstBeaver.type);
-        setBeaverLevel(firstBeaver.level);
+        console.log('✅ Valid beavers after filtering #1:', validBeavers);
         
-        // Use total rewards from playerInfo (already formatted)
-        setPendingRewards(formatNumber(parseFloat(playerInfo.totalRewards || '0')));
-        setRealTimePendingRewards(formatNumber(parseFloat(playerInfo.totalRewards || '0')));
-        setLastUpdateTimestamp(Math.floor(Date.now() / 1000));
+        if (validBeavers.length > 0) {
+          // Remove duplicate beavers based on ID
+          const uniqueBeavers = validBeavers.filter((beaver, index, self) => 
+            index === self.findIndex(b => b.id === beaver.id)
+          );
+          
+          console.log('🔍 Original beavers:', validBeavers);
+          console.log('✅ Unique beavers after deduplication:', uniqueBeavers);
+          
+          setHasStaked(true);
+          setBeavers(uniqueBeavers);
+          
+          // Use first valid beaver for single beaver display compatibility
+          const firstBeaver = uniqueBeavers[0];
+          setBeaverType(firstBeaver.type);
+          setBeaverLevel(firstBeaver.level);
+          
+          // Use total rewards from playerInfo (already formatted)
+          setPendingRewards(formatNumber(parseFloat(playerInfo.totalRewards || '0')));
+          setRealTimePendingRewards(formatNumber(parseFloat(playerInfo.totalRewards || '0')));
+          setLastUpdateTimestamp(Math.floor(Date.now() / 1000));
+        } else {
+          // All beavers were filtered out, treat as no staked beavers
+          setHasStaked(false);
+          setBeavers([]);
+          setBeaverType(0);
+          setBeaverLevel(0);
+          setPendingRewards('0');
+          setRealTimePendingRewards('0');
+          setLastUpdateTimestamp(Math.floor(Date.now() / 1000));
+        }
       } else {
         setHasStaked(false);
         setBeavers([]);
@@ -379,28 +409,28 @@ function App() {
     };
   }, []); // Empty dependency array - only run once on mount
 
-  // Auto-refresh data every 30 seconds (for balances and beaver info)
+  // Auto-refresh data every 5 minutes (for balances and beaver info)
   useEffect(() => {
     if (isConnected) {
       refreshData();
-      const interval = setInterval(refreshData, 30000); // Reduced frequency
+      const interval = setInterval(refreshData, 5 * 60 * 1000); // 5 minutes
       return () => clearInterval(interval);
     }
   }, [isConnected, refreshData]);
 
-  // Real-time pending rewards update every 2 seconds
+  // Real-time pending rewards update every 10 seconds
   useEffect(() => {
     if (isConnected && hasStaked) {
       updateRealTimePendingRewards();
-      const rewardInterval = setInterval(updateRealTimePendingRewards, 2000);
+      const rewardInterval = setInterval(updateRealTimePendingRewards, 10000); // 10 seconds
       return () => clearInterval(rewardInterval);
     }
   }, [isConnected, hasStaked, updateRealTimePendingRewards]);
 
-  // Add a dummy state to force re-render every second for live pending
+  // Add a dummy state to force re-render every 5 seconds for live pending
   const [tick, setTick] = useState(0);
   useEffect(() => {
-    const interval = setInterval(() => setTick(t => t + 1), 1000);
+    const interval = setInterval(() => setTick(t => t + 1), 5000); // 5 seconds
     return () => clearInterval(interval);
   }, []);
 
@@ -683,6 +713,10 @@ function App() {
 
     setIsLoading(true);
     setLoadingText(`Buying ${beaverTypes[selectedBeaver].name} beaver...`);
+    
+    // Clear current beavers to prevent showing duplicates during purchase
+    setBeavers([]);
+    setHasStaked(false);
 
     try {
       console.log(`Staking ${beaverTypes[selectedBeaver].name} beaver for ${beaverCost} STRK`);
@@ -694,23 +728,22 @@ function App() {
       await stakeStarknetBeaver(selectedBeaver, beaverCostWei, workingStrkAddress);
       setLoadingText('Transaction confirmed! Refreshing data...');
       
-      // Immediately update state to show mining section
-      setHasStaked(true);
+      // Don't immediately set hasStaked - wait for blockchain data
+      // This prevents showing duplicate beavers during purchase
       setLocalBurrEarned(0);
       setLastMiningUpdate(Date.now());
       
-      // Then refresh all data from blockchain
-      await refreshData();
-      
-      // Force another refresh after a short delay to ensure UI updates
+      // Wait for blockchain confirmation before updating UI
       setTimeout(async () => {
-        try {
+        await refreshData();
+        console.log('🔄 Blockchain data refreshed after beaver purchase');
+        
+        // Force another refresh to ensure no duplicates
+        setTimeout(async () => {
           await refreshData();
-          console.log('🔄 Secondary refresh completed after beaver purchase');
-        } catch (error) {
-          console.error('❌ Secondary refresh failed:', error);
-        }
-      }, 2000);
+          console.log('🔄 Secondary refresh to prevent duplicates');
+        }, 2000);
+      }, 4000); // 4 saniye bekle
       
       setIsLoading(false);
       setLoadingText('');
@@ -1163,7 +1196,7 @@ function App() {
               <div className="beaver-fleet-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px'}}>
                 {beavers.map((beaver, index) => (
                   <div 
-                    key={beaver.id || index} 
+                    key={`${beaver.id}-${beaver.type}-${beaver.level}-${index}`} 
                     className="active-beaver upgrade-hover"
                     onClick={() => upgradeBeaver(beaver)}
                     style={{

@@ -30,31 +30,16 @@ const GameDashboard = () => {
     }
   };
 
+  // Removed optimistic update to prevent double counting
+
   useEffect(() => {
     fetchAnalytics();
     
     // Update every 10 minutes
     const interval = setInterval(fetchAnalytics, 600000); // 10 minutes (600,000 ms)
     
-    // Refresh data when page becomes visible (user returns to tab)
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        fetchAnalytics();
-      }
-    };
-    
-    // Refresh data when window gains focus
-    const handleFocus = () => {
-      fetchAnalytics();
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-    
     return () => {
       clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
     };
   }, []);
 
@@ -119,21 +104,40 @@ const GameDashboard = () => {
       (Number(analytics.pro_count || 0) * PRO_HOURLY_RATE * 24) +
       (Number(analytics.degen_count || 0) * DEGEN_HOURLY_RATE * 24);
 
-    // Calculate total earned so far based on actual days since start
-    const actualDaysSinceStart = Math.max(0, daysSinceStart);
-    const totalEarned = currentDailyDistribution * actualDaysSinceStart;
-
-    // Calculate already distributed tokens from contract
+    // Calculate already distributed tokens from contract (this is the real total earned)
     const DECIMALS = 18;
     const alreadyClaimed = Number(analytics.total_burr_claimed || 0) / Math.pow(10, DECIMALS);
     const alreadyBurned = Number(analytics.total_burr_burned || 0) / Math.pow(10, DECIMALS);
     const alreadyDistributed = alreadyClaimed + alreadyBurned;
     
-    // Calculate remaining supply for mining
-    const remainingSupply = MINING_SUPPLY - alreadyDistributed;
+    // Calculate total earned based on current daily distribution and days since start
+    const actualDaysSinceStart = Math.max(0, daysSinceStart);
+    const totalEarned = currentDailyDistribution * actualDaysSinceStart;
     
-    // Calculate days remaining based on current daily distribution
+    // Calculate days remaining based on total earned and current daily distribution
+    // Total supply is 2B, so remaining = 2B - totalEarned
+    const totalSupply = 2000000000; // 2B total supply
+    const remainingSupply = Math.max(0, totalSupply - totalEarned);
     const daysRemaining = currentDailyDistribution > 0 ? (remainingSupply / currentDailyDistribution) : 0;
+    
+    // Debug logging
+    console.log('🔍 Mining Timeline Debug:');
+    console.log('📊 Total Supply (2B):', totalSupply);
+    console.log('💰 Already Claimed:', alreadyClaimed);
+    console.log('🔥 Already Burned:', alreadyBurned);
+    console.log('📦 Already Distributed:', alreadyDistributed);
+    console.log('💡 Total Earned (Display):', totalEarned);
+    console.log('📦 Remaining Supply:', remainingSupply);
+    console.log('📈 Current Daily Distribution:', currentDailyDistribution);
+    console.log('⏰ Days Remaining:', daysRemaining);
+    console.log('📅 Days Since Start:', Math.floor(Math.max(0, daysSinceStart)));
+    console.log('🦫 Noob Count:', analytics.noob_count);
+    console.log('🦫 Pro Count:', analytics.pro_count);
+    console.log('🦫 Degen Count:', analytics.degen_count);
+    
+    console.log('💡 Total Earned (Display):', totalEarned);
+    console.log('🎯 Expected Daily Rate:', currentDailyDistribution);
+    console.log('📊 Expected Total (5 days):', currentDailyDistribution * 5);
     
     // Calculate estimated end date
     const estimatedEndDate = daysRemaining > 0 
@@ -155,7 +159,7 @@ const GameDashboard = () => {
       alreadyClaimed,
       alreadyBurned,
       totalEarned,
-      daysSinceStart: Math.floor(actualDaysSinceStart),
+      daysSinceStart: Math.floor(Math.max(0, daysSinceStart)),
       currentHourlyRate,
       lastUpdate: new Date().toLocaleTimeString()
     };
