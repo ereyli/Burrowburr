@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchGameAnalytics } from '../utils/starknet';
+import { calculateHourlyRate } from '../utils/constants';
 
 const GameDashboard = () => {
   const [analytics, setAnalytics] = useState(null);
@@ -79,7 +80,7 @@ const GameDashboard = () => {
     }
   };
 
-  // Mining timeline calculation with real contract start time
+  // Mining timeline calculation with real beaver levels
   const calculateMiningTimeline = () => {
     if (!analytics) return null;
 
@@ -93,16 +94,30 @@ const GameDashboard = () => {
     const now = new Date();
     const daysSinceStart = (now - MINING_START_DATE) / (1000 * 60 * 60 * 24);
 
-    // Hourly rates for each beaver type (level 1)
-    const NOOB_HOURLY_RATE = 300; // 300 BURR/hour
-    const PRO_HOURLY_RATE = 750; // 750 BURR/hour  
-    const DEGEN_HOURLY_RATE = 2250; // 2250 BURR/hour
+    // Real beaver levels (based on actual data)
+    // Level upgrade is now active, use real levels
+    const actualDaysSinceStart = Math.max(0, daysSinceStart);
+    
+    // Use real levels since day 7 is complete
+    const REAL_BEAVER_LEVELS = {
+      NOOB: 2,   // 256 noob - mostly level 1-2 (new players)
+      PRO: 3,    // 54 pro - mostly level 2-4 (experienced players)
+      DEGEN: 3   // 207 degen - level 3 (corrected)
+    };
 
-    // Calculate current daily distribution based on actual beaver counts
-    const currentDailyDistribution = 
-      (Number(analytics.noob_count || 0) * NOOB_HOURLY_RATE * 24) +
-      (Number(analytics.pro_count || 0) * PRO_HOURLY_RATE * 24) +
-      (Number(analytics.degen_count || 0) * DEGEN_HOURLY_RATE * 24);
+    // Get beaver counts from analytics
+    const noobCount = Number(analytics.noob_count || 0);
+    const proCount = Number(analytics.pro_count || 0);
+    const degenCount = Number(analytics.degen_count || 0);
+
+    // Debug logs removed - clean interface only
+
+    // Calculate daily distribution with real levels
+    const dailyNoob = noobCount * calculateHourlyRate('NOOB', REAL_BEAVER_LEVELS.NOOB) * 24;
+    const dailyPro = proCount * calculateHourlyRate('PRO', REAL_BEAVER_LEVELS.PRO) * 24;
+    const dailyDegen = degenCount * calculateHourlyRate('DEGEN', REAL_BEAVER_LEVELS.DEGEN) * 24;
+
+    const currentDailyDistribution = dailyNoob + dailyPro + dailyDegen;
 
     // Calculate already distributed tokens from contract (this is the real total earned)
     const DECIMALS = 18;
@@ -110,9 +125,21 @@ const GameDashboard = () => {
     const alreadyBurned = Number(analytics.total_burr_burned || 0) / Math.pow(10, DECIMALS);
     const alreadyDistributed = alreadyClaimed + alreadyBurned;
     
-    // Calculate total earned based on current daily distribution and days since start
-    const actualDaysSinceStart = Math.max(0, daysSinceStart);
-    const totalEarned = currentDailyDistribution * actualDaysSinceStart;
+    // Calculate total earned with correct historical rates
+    // First 6 days: level 1 rates, then real levels for remaining days
+    const LEVEL_UPGRADE_START_DAY = 7;
+    const daysBeforeUpgrade = Math.min(LEVEL_UPGRADE_START_DAY - 1, actualDaysSinceStart);
+    const daysAfterUpgrade = Math.max(0, actualDaysSinceStart - LEVEL_UPGRADE_START_DAY + 1);
+    
+    // Calculate with historical rates
+    const dailyBeforeUpgrade = (noobCount * calculateHourlyRate('NOOB', 1) * 24) + 
+                               (proCount * calculateHourlyRate('PRO', 1) * 24) + 
+                               (degenCount * calculateHourlyRate('DEGEN', 1) * 24);
+    
+    const totalEarned = (dailyBeforeUpgrade * daysBeforeUpgrade) + 
+                        (currentDailyDistribution * daysAfterUpgrade);
+    
+    // Debug logs removed - clean interface only
     
     // Calculate days remaining based on total earned and current daily distribution
     // Total supply is 2B, so remaining = 2B - totalEarned
@@ -120,24 +147,7 @@ const GameDashboard = () => {
     const remainingSupply = Math.max(0, totalSupply - totalEarned);
     const daysRemaining = currentDailyDistribution > 0 ? (remainingSupply / currentDailyDistribution) : 0;
     
-    // Debug logging
-    console.log('🔍 Mining Timeline Debug:');
-    console.log('📊 Total Supply (2B):', totalSupply);
-    console.log('💰 Already Claimed:', alreadyClaimed);
-    console.log('🔥 Already Burned:', alreadyBurned);
-    console.log('📦 Already Distributed:', alreadyDistributed);
-    console.log('💡 Total Earned (Display):', totalEarned);
-    console.log('📦 Remaining Supply:', remainingSupply);
-    console.log('📈 Current Daily Distribution:', currentDailyDistribution);
-    console.log('⏰ Days Remaining:', daysRemaining);
-    console.log('📅 Days Since Start:', Math.floor(Math.max(0, daysSinceStart)));
-    console.log('🦫 Noob Count:', analytics.noob_count);
-    console.log('🦫 Pro Count:', analytics.pro_count);
-    console.log('🦫 Degen Count:', analytics.degen_count);
-    
-    console.log('💡 Total Earned (Display):', totalEarned);
-    console.log('🎯 Expected Daily Rate:', currentDailyDistribution);
-    console.log('📊 Expected Total (5 days):', currentDailyDistribution * 5);
+    // Debug logs removed - clean interface only
     
     // Calculate estimated end date
     const estimatedEndDate = daysRemaining > 0 
@@ -146,9 +156,9 @@ const GameDashboard = () => {
 
     // Calculate real-time hourly rate
     const currentHourlyRate = 
-      (Number(analytics.noob_count || 0) * NOOB_HOURLY_RATE) +
-      (Number(analytics.pro_count || 0) * PRO_HOURLY_RATE) +
-      (Number(analytics.degen_count || 0) * DEGEN_HOURLY_RATE);
+      (noobCount * calculateHourlyRate('NOOB', REAL_BEAVER_LEVELS.NOOB)) +
+      (proCount * calculateHourlyRate('PRO', REAL_BEAVER_LEVELS.PRO)) +
+      (degenCount * calculateHourlyRate('DEGEN', REAL_BEAVER_LEVELS.DEGEN));
 
     return {
       dailyDistribution: currentDailyDistribution,
