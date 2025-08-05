@@ -418,11 +418,11 @@ function App() {
     }
   }, [isConnected, refreshData]);
 
-  // Real-time pending rewards update every 10 seconds
+  // Real-time pending rewards update every 5 minutes
   useEffect(() => {
     if (isConnected && hasStaked) {
       updateRealTimePendingRewards();
-      const rewardInterval = setInterval(updateRealTimePendingRewards, 10000); // 10 seconds
+      const rewardInterval = setInterval(updateRealTimePendingRewards, 5 * 60 * 1000); // 5 minutes
       return () => clearInterval(rewardInterval);
     }
   }, [isConnected, hasStaked, updateRealTimePendingRewards]);
@@ -596,7 +596,9 @@ function App() {
   const forceRefresh = async () => {
     console.log('🔄 Force refreshing all data...');
     await refreshData();
-    await updateRealTimePendingRewards();
+    if (hasStaked) {
+      await updateRealTimePendingRewards();
+    }
   };
 
 
@@ -899,9 +901,9 @@ function App() {
           </div>
           
           <div className="header-buttons" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            {/* BURR Buy Button - DexScreener Link */}
+            {/* BURR Buy Button - AVNU.fi Link */}
             <a
-              href="https://dexscreener.com"
+              href="https://app.avnu.fi/en/burr-strk"
               target="_blank"
               rel="noopener noreferrer"
               className="btn"
