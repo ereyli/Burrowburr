@@ -89,6 +89,29 @@ export const UPGRADE_COSTS = {
   }
 };
 
+// Level multipliers matching contract logic (divided by 1000)
+export const LEVEL_MULTIPLIERS = {
+  1: 1.0,    // 1000 / 1000 = 1.0x
+  2: 1.5,    // 1500 / 1000 = 1.5x  
+  3: 2.25,   // 2250 / 1000 = 2.25x
+  4: 3.375,  // 3375 / 1000 = 3.375x
+  5: 5.0625  // 5062 / 1000 = 5.0625x
+};
+
+// Function to calculate hourly rate with level multiplier
+export const calculateHourlyRate = (beaverType, level = 1) => {
+  const baseRates = {
+    NOOB: 300,   // 300 BURR/hour
+    PRO: 750,    // 750 BURR/hour
+    DEGEN: 2250  // 2250 BURR/hour
+  };
+  
+  const baseRate = baseRates[beaverType] || 300;
+  const multiplier = LEVEL_MULTIPLIERS[level] || 1.0;
+  
+  return baseRate * multiplier;
+};
+
 // Beaver images configuration - using string identifiers for components to render
 export const BEAVER_IMAGES = {
   NOOB: "noob",
