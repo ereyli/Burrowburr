@@ -35,21 +35,15 @@ const Header = ({ isConnected, onConnect }) => {
         {/* Action Buttons */}
         <div className="flex items-center space-x-4">
           {/* BURR Buy Button */}
-          <button
-            onClick={() => {
-              const dexSection = document.getElementById('dexscreener-section');
-              if (dexSection) {
-                dexSection.scrollIntoView({ 
-                  behavior: 'smooth', 
-                  block: 'center' 
-                });
-              }
-            }}
+          <a
+            href="https://app.avnu.fi/en/burr-strk"
+            target="_blank"
+            rel="noopener noreferrer"
             className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-2 px-4 rounded-lg cursor-pointer text-sm transition-all duration-300 hover:scale-105 shadow-lg"
-            style={{border: 'none'}}
+            style={{border: 'none', textDecoration: 'none'}}
           >
             Buy $BURR
-          </button>
+          </a>
 
           {/* Wallet Connection */}
           {!isConnected ? (
