@@ -29,11 +29,23 @@ A React-based decentralized application for the BurrowGame, featuring a clean, f
 - 365-day mining period
 - 700 million $BURR total reward pool
 
+## Environment Variables
+
+Create a `.env` file in the frontend directory with your Alchemy RPC URL:
+
+```bash
+# .env
+REACT_APP_ALCHEMY_RPC_URL=https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_8/YOUR_API_KEY
+```
+
 ## Quick Start
 
 ```bash
 # Install dependencies
 npm install
+
+# Create .env file with your RPC URL
+echo "REACT_APP_ALCHEMY_RPC_URL=https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_8/YOUR_API_KEY" > .env
 
 # Start development server
 npm start

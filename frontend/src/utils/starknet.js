@@ -9,19 +9,71 @@ if (typeof BigInt === 'undefined') {
     throw new Error('BigInt is not supported in this browser');
 }
 
-// RPC URLs for different networks
+// RPC URLs for different networks - Single endpoint
 const RPC_URLS = {
-    [NETWORKS.MAINNET]: process.env.REACT_APP_ALCHEMY_RPC_URL || "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_8/EXk1VtDVCaeNBRAWsi7WA"
+    [NETWORKS.MAINNET]: [
+        process.env.REACT_APP_ALCHEMY_RPC_URL || "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_8/EXk1VtDVCaeNBRAWsi7WA"
+    ]
 };
 
-// Get current network RPC URL
-const getCurrentRpcUrl = () => {
+// Get current network RPC URLs
+const getCurrentRpcUrls = () => {
     return RPC_URLS[NETWORKS.MAINNET];
 };
 
-const provider = new RpcProvider({
-    nodeUrl: getCurrentRpcUrl()
-});
+// Create provider with single endpoint
+let provider = null;
+
+const createProvider = () => {
+    const urls = getCurrentRpcUrls();
+    const url = urls[0]; // Use only the first (and only) endpoint
+    
+    try {
+        console.log(`🔄 Using RPC endpoint: ${url}`);
+        return new RpcProvider({
+            nodeUrl: url
+        });
+    } catch (error) {
+        console.error(`❌ Failed to create provider:`, error);
+        return null;
+    }
+};
+
+// Initialize provider
+provider = createProvider();
+
+// Wrapper function for RPC calls with retry
+const executeWithRetry = async (operation, maxRetries = 3) => {
+    let lastError = null;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            if (!provider) {
+                provider = createProvider();
+                if (!provider) {
+                    throw new Error('RPC provider unavailable');
+                }
+            }
+            
+            return await operation(provider);
+        } catch (error) {
+            lastError = error;
+            console.warn(`⚠️ RPC attempt ${attempt + 1} failed:`, error.message);
+            
+            // For any error, try to recreate provider
+            if (attempt < maxRetries - 1) {
+                console.log(`🔄 Recreating RPC provider...`);
+                provider = createProvider();
+                
+                if (!provider) {
+                    throw new Error('RPC provider unavailable');
+                }
+            }
+        }
+    }
+    
+    throw lastError || new Error('All RPC attempts failed');
+};
 
 // ABI definitions
 const ERC20_ABI = [
@@ -1433,16 +1485,16 @@ export async function fetchGameInfo() {
     }
 }
 
-// Fetch game analytics from contract
+// Fetch game analytics from contract with retry
 export async function fetchGameAnalytics() {
-    try {
+    return executeWithRetry(async (currentProvider) => {
         console.log('🔍 Fetching game analytics from contract:', GAME_CONTRACT_ADDRESS);
         
         // Get active users count separately
         console.log('🔍 Getting active users count...');
         let active_users = 0;
         try {
-            const activeUsersResult = await provider.callContract({
+            const activeUsersResult = await currentProvider.callContract({
                 contractAddress: GAME_CONTRACT_ADDRESS,
                 entrypoint: 'get_active_users_count',
                 calldata: []
@@ -1459,7 +1511,7 @@ export async function fetchGameAnalytics() {
         let pro_count = 0;
         let degen_count = 0;
         try {
-            const beaverTypesResult = await provider.callContract({
+            const beaverTypesResult = await currentProvider.callContract({
                 contractAddress: GAME_CONTRACT_ADDRESS,
                 entrypoint: 'get_beaver_type_stats',
                 calldata: []
@@ -1480,7 +1532,7 @@ export async function fetchGameAnalytics() {
         
         // Call get_game_analytics for other data
         console.log('🔍 Getting game analytics...');
-        const analyticsResult = await provider.callContract({
+        const analyticsResult = await currentProvider.callContract({
             contractAddress: GAME_CONTRACT_ADDRESS,
             entrypoint: 'get_game_analytics',
             calldata: []
@@ -1538,12 +1590,7 @@ export async function fetchGameAnalytics() {
             console.log('⚠️ Expected array with 9+ elements, got:', analyticsResult?.length || 'undefined');
             return null;
         }
-    } catch (error) {
-        console.error('❌ Analytics fetch error:', error);
-        console.error('❌ Error details:', error.message);
-        console.error('❌ Error stack:', error.stack);
-        return null;
-    }
+    });
 }
 
 // Get emergency status from contract
