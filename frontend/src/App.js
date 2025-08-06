@@ -1150,7 +1150,7 @@ function App() {
                 </div>
                 
                 <div style={{color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '15px'}}>
-                  <div>⛏️ Mining Rate: {formatNumber(getCurrentMiningRatePerSecond() * 3600)} $BURR/hour</div>
+                  <div>📊 Data updates every 5 minutes</div>
                 </div>
 
                 <button 
