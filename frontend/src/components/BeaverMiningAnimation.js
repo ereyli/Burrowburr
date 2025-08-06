@@ -278,20 +278,20 @@ const BeaverMiningAnimation = () => {
       });
 
       // Animation phases
-      if (frame < 40) {
+      if (frame < 50) {
         // Phase 1: Beaver walking from right to left towards burrow (faster)
-        beaverX = 480 - (frame / 40) * (480 - BURROW_X);
+        beaverX = 480 - (frame / 50) * (480 - BURROW_X);
         beaverY = 250;
         drawBeaver(beaverX, beaverY, false);
-        burrowTextOpacity = frame / 40;
+        burrowTextOpacity = frame / 50;
         
         // Add excitement when approaching burrow
-        if (frame > 30) {
-          jumpHeight += 0.1;
+        if (frame > 35) {
+          jumpHeight += 0.08;
         }
-      } else if (frame < 80) {
+      } else if (frame < 100) {
         // Phase 2: Beaver going underground - move towards burrow entrance (faster)
-        beaverX = BURROW_X + 30 - (frame - 40) / 40 * 30;
+        beaverX = BURROW_X + 30 - (frame - 50) / 50 * 30;
         beaverY = 250;
         isUnderground = true;
         undergroundTime = 0;
@@ -299,7 +299,7 @@ const BeaverMiningAnimation = () => {
         burrowTextOpacity = 1;
         
         // Add dirt particles
-        if (frame % 3 === 0) {
+        if (frame % 4 === 0) {
           burrowDirt.push({
             x: beaverX - 15,
             y: BURROW_Y,
@@ -308,18 +308,18 @@ const BeaverMiningAnimation = () => {
             life: 0
           });
         }
-      } else if (frame < 140) {
-        // Phase 3: Beaver completely underground (shorter mining time)
+      } else if (frame < 180) {
+        // Phase 3: Beaver completely underground (medium mining time)
         isUnderground = true;
         undergroundTime++;
         burrowTextOpacity = 1;
         
         // Don't draw beaver - it's completely underground
         drawMiningParticles();
-        miningProgress = (frame - 80) / 60;
+        miningProgress = (frame - 100) / 80;
         
         // Add mining particles
-        if (frame % 8 === 0) {
+        if (frame % 12 === 0) {
           burrowDirt.push({
             x: BURROW_X + (Math.random() - 0.5) * 20,
             y: BURROW_Y - 10 + Math.random() * 10,
@@ -328,38 +328,38 @@ const BeaverMiningAnimation = () => {
             life: 0
           });
         }
-      } else if (frame < 180) {
+      } else if (frame < 230) {
         // Phase 4: Beaver coming out of burrow with excitement (faster)
-        beaverX = BURROW_X + 60 - (frame - 140) / 40 * 30; // More to the right
+        beaverX = BURROW_X + 60 - (frame - 180) / 50 * 30; // More to the right
         beaverY = 250;
         isUnderground = false;
         drawBeaver(beaverX, beaverY, false);
         burrowTextOpacity = 1;
         
         // Add extra bounce when coming out
-        jumpHeight += 0.15;
+        jumpHeight += 0.12;
         
         // Throw tokens
-        if (frame % 10 === 0 && frame < 170) {
+        if (frame % 8 === 0 && frame < 210) {
           for (let i = 0; i < 8; i++) {
             tokens.push(new Token(beaverX - 15, beaverY));
           }
         }
       } else {
-        // Phase 5: Idle state with playful movements (shorter idle)
+        // Phase 5: Idle state with playful movements (medium idle)
         beaverX = 300; // Center of canvas
         beaverY = 250;
         drawBeaver(beaverX, beaverY, false);
         burrowTextOpacity = 0.5;
         
         // Add playful movements
-        if (frame % 60 === 0) {
-          // Occasional jump (more frequent)
-          jumpHeight += 0.5;
+        if (frame % 80 === 0) {
+          // Occasional jump (medium frequency)
+          jumpHeight += 0.4;
         }
         
-        // Reset animation (shorter cycle)
-        if (frame > 300) {
+        // Reset animation (medium cycle)
+        if (frame > 400) {
           frame = 0;
           tokens = [];
           burrowDirt = [];
@@ -383,7 +383,7 @@ const BeaverMiningAnimation = () => {
       });
 
       // Draw mining progress bar
-      if (frame >= 80 && frame <= 140) {
+      if (frame >= 160 && frame <= 280) {
         ctx.fillStyle = colors.token;
         ctx.fillRect(50, 50, miningProgress * 200, 10);
         ctx.strokeStyle = '#fff';
@@ -397,13 +397,13 @@ const BeaverMiningAnimation = () => {
       }
 
       frame++;
-      animationId = requestAnimationFrame(animate);
+      animationId = setTimeout(animate, 40); // 25 FPS for medium speed
     };
 
     animate();
 
     return () => {
-      cancelAnimationFrame(animationId);
+      clearTimeout(animationId);
     };
   }, []);
 
