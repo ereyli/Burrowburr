@@ -23,6 +23,7 @@ import TokenInfo from './components/TokenInfo';
 import ToastContainer, { showToast } from './components/ToastContainer';
 import Header from './components/Header';
 import GameDashboard from './components/GameDashboard';
+import BeaverMiningAnimation from './components/BeaverMiningAnimation';
 import './index.css';
 
 
@@ -1095,7 +1096,13 @@ function App() {
         <TokenInfo />
 
         {/* Game Dashboard */}
-        <GameDashboard />
+        <GameDashboard 
+          hasStaked={hasStaked}
+          beavers={beavers}
+          onUpgrade={upgradeBeaver}
+          realTimePendingRewardsRaw={realTimePendingRewardsRaw}
+          onClaim={claimRewards}
+        />
 
         <div className="grid grid-2">
           {/* Stake Section */}
@@ -1178,70 +1185,87 @@ function App() {
 
         {/* Mining Fleet - Only show if has staked beavers */}
         {hasStaked && beavers.length > 0 && (
-          <div className="card">
-            <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <img src="/beaver_logo.png" alt="Beaver" style={{ width: '32px', height: '32px' }} className="image-container" />
-              <span>⛏️</span>
-              <span style={{marginLeft: '10px'}}>Your Mining Fleet ({beavers.length} Beavers)</span>
-            </h2>
+          <>
+            {/* Beaver Mining Animation */}
+            <div className="card">
+              <h2 style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px',
+                color: 'var(--accent-orange)',
+                marginBottom: '20px'
+              }}>
+                <img src="/beaver_logo.png" alt="Beaver" style={{ width: '28px', height: '28px' }} className="image-container" />
+                Mining Animation
+              </h2>
+              <BeaverMiningAnimation />
+            </div>
+
+            <div className="card">
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <img src="/beaver_logo.png" alt="Beaver" style={{ width: '32px', height: '32px' }} className="image-container" />
+                <span>⛏️</span>
+                <span style={{marginLeft: '10px'}}>Your Mining Fleet ({beavers.length} Beavers)</span>
+              </h2>
             
-            <div className="all-beavers">
-              <div style={{marginBottom: '15px', textAlign: 'center'}}>
-                <div style={{color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '5px'}}>
-                  💡 Click on any beaver to upgrade it
-                </div>
-                <div style={{color: 'var(--accent-orange)', fontWeight: 'bold'}}>
-                  Total Fleet Rate: {formatNumber(beavers.reduce((total, beaver) => total + getBeaverHourlyRate(beaver), 0))} $BURR/hour
-                </div>
-              </div>
-              
-              <div className="beaver-fleet-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px'}}>
-                {beavers.map((beaver, index) => (
-                  <div 
-                    key={`${beaver.id}-${beaver.type}-${beaver.level}-${index}`} 
-                    className="active-beaver upgrade-hover"
-                    onClick={() => upgradeBeaver(beaver)}
-                    style={{
-                      cursor: 'pointer',
-                      position: 'relative'
-                    }}
-                  >
-                    {beaver.level < 5 && (
-                      <div className="upgrade-indicator">
-                        ⬆️ Click to Upgrade
-                      </div>
-                    )}
-                    <div className="beaver-info">
-                      <div style={{display: 'flex', justifyContent: 'center', marginBottom: '8px'}}>
-                        {getBeaverEmoji(beaver.type + 1)}
-                      </div>
-                      <div>
-                        <div style={{fontSize: '1.1rem', fontWeight: 'bold'}}>
-                          {getBeaverTypeString(beaver.type + 1)} #{beaver.id}
-                        </div>
-                        <div style={{color: 'var(--text-light)'}}>
-                          Level {beaver.level} {beaver.level === 5 ? '(MAX)' : ''}
-                        </div>
-                        {beaver.level < 5 && (
-                          <div style={{color: 'var(--accent-green)', fontSize: '0.8rem'}}>
-                            Upgrade: {formatNumber(getUpgradeCost(beaver.type, beaver.level))} $BURR
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="beaver-stats">
-                      <div style={{color: 'var(--accent-orange)', fontWeight: 'bold'}}>
-                        {formatNumber(getBeaverHourlyRate(beaver))} $BURR/hour
-                      </div>
-                      <div style={{color: 'var(--text-light)', fontSize: '0.8rem'}}>
-                        🔥 ACTIVELY MINING 🔥
-                      </div>
-                    </div>
+              <div className="all-beavers">
+                <div style={{marginBottom: '15px', textAlign: 'center'}}>
+                  <div style={{color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '5px'}}>
+                    💡 Click on any beaver to upgrade it
                   </div>
-                ))}
+                  <div style={{color: 'var(--accent-orange)', fontWeight: 'bold'}}>
+                    Total Fleet Rate: {formatNumber(beavers.reduce((total, beaver) => total + getBeaverHourlyRate(beaver), 0))} $BURR/hour
+                  </div>
+                </div>
+                
+                <div className="beaver-fleet-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px'}}>
+                  {beavers.map((beaver, index) => (
+                    <div 
+                      key={`${beaver.id}-${beaver.type}-${beaver.level}-${index}`} 
+                      className="active-beaver upgrade-hover"
+                      onClick={() => upgradeBeaver(beaver)}
+                      style={{
+                        cursor: 'pointer',
+                        position: 'relative'
+                      }}
+                    >
+                      {beaver.level < 5 && (
+                        <div className="upgrade-indicator">
+                          ⬆️ Click to Upgrade
+                        </div>
+                      )}
+                      <div className="beaver-info">
+                        <div style={{display: 'flex', justifyContent: 'center', marginBottom: '8px'}}>
+                          {getBeaverEmoji(beaver.type + 1)}
+                        </div>
+                        <div>
+                          <div style={{fontSize: '1.1rem', fontWeight: 'bold'}}>
+                            {getBeaverTypeString(beaver.type + 1)} #{beaver.id}
+                          </div>
+                          <div style={{color: 'var(--text-light)'}}>
+                            Level {beaver.level} {beaver.level === 5 ? '(MAX)' : ''}
+                          </div>
+                          {beaver.level < 5 && (
+                            <div style={{color: 'var(--accent-green)', fontSize: '0.8rem'}}>
+                              Upgrade: {formatNumber(getUpgradeCost(beaver.type, beaver.level))} $BURR
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="beaver-stats">
+                        <div style={{color: 'var(--accent-orange)', fontWeight: 'bold'}}>
+                          {formatNumber(getBeaverHourlyRate(beaver))} $BURR/hour
+                        </div>
+                        <div style={{color: 'var(--text-light)', fontSize: '0.8rem'}}>
+                          🔥 ACTIVELY MINING 🔥
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          </>
         )}
 
 
