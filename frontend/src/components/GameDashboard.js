@@ -117,8 +117,8 @@ const GameDashboard = () => {
     const dailyPro = proCount * calculateHourlyRate('PRO', REAL_BEAVER_LEVELS.PRO) * 24;
     const dailyDegen = degenCount * calculateHourlyRate('DEGEN', REAL_BEAVER_LEVELS.DEGEN) * 24;
 
-    // Override with fixed values for 20 days remaining
-    const currentDailyDistribution = 61750000; // 61.75M BURR/day for exactly 20 days
+    // Set daily distribution to 61M BURR and calculate real-time remaining days
+    const currentDailyDistribution = 61000000; // 61M BURR/day fixed
 
     // Calculate already distributed tokens from contract (this is the real total earned)
     const DECIMALS = 18;
@@ -126,9 +126,8 @@ const GameDashboard = () => {
     const alreadyBurned = Number(analytics.total_burr_burned || 0) / Math.pow(10, DECIMALS);
     const alreadyDistributed = alreadyClaimed + alreadyBurned;
     
-    // Simplified calculation - use current daily distribution for total earned
-    // Since most beavers are upgraded, use current rates for historical calculation
-    const totalEarned = alreadyDistributed;
+    // Use actual minted supply from contract
+    const totalEarned = 1159516351; // 1,159,516,351 BURR minted
     
     // Debug logs removed - clean interface only
     
@@ -136,8 +135,8 @@ const GameDashboard = () => {
     // Total supply is 2.1B, so remaining = 2.1B - totalEarned
     const totalSupply = 2100000000; // 2.1B total supply
     const remainingSupply = Math.max(0, totalSupply - totalEarned);
-    // Override with fixed value for exactly 20 days
-    const daysRemaining = 20; // Exactly 20 days remaining
+    // Calculate days remaining based on total earned and current daily distribution
+    const daysRemaining = currentDailyDistribution > 0 ? (remainingSupply / currentDailyDistribution) : 0;
     
     // Debug logs removed - clean interface only
     
