@@ -117,8 +117,8 @@ const GameDashboard = () => {
     const dailyPro = proCount * calculateHourlyRate('PRO', REAL_BEAVER_LEVELS.PRO) * 24;
     const dailyDegen = degenCount * calculateHourlyRate('DEGEN', REAL_BEAVER_LEVELS.DEGEN) * 24;
 
-    // Set daily distribution to 61M BURR and calculate real-time remaining days
-    const currentDailyDistribution = 61000000; // 61M BURR/day fixed
+    // Use average daily production of 62M BURR
+    const currentDailyDistribution = 62000000; // 62M BURR/day average
 
     // Calculate already distributed tokens from contract (this is the real total earned)
     const DECIMALS = 18;
@@ -126,8 +126,8 @@ const GameDashboard = () => {
     const alreadyBurned = Number(analytics.total_burr_burned || 0) / Math.pow(10, DECIMALS);
     const alreadyDistributed = alreadyClaimed + alreadyBurned;
     
-    // Use actual minted supply from contract
-    const totalEarned = 1159516351; // 1,159,516,351 BURR minted
+    // Use current minted supply from contract
+    const totalEarned = 1284497877; // 1,284,497,877 BURR minted
     
     // Debug logs removed - clean interface only
     
