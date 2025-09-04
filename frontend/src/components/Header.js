@@ -34,6 +34,17 @@ const Header = ({ isConnected, onConnect }) => {
 
         {/* Action Buttons */}
         <div className="flex items-center space-x-4">
+          {/* MemeHub Button */}
+          <a
+            href="https://www.memehubai.fun/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-2 px-4 rounded-lg cursor-pointer text-sm transition-all duration-300 hover:scale-105 shadow-lg"
+            style={{border: 'none', textDecoration: 'none'}}
+          >
+            🎭 MemeHub
+          </a>
+
           {/* BURR Buy Button */}
           <a
             href="https://app.avnu.fi/en/burr-strk"
