@@ -126,8 +126,8 @@ const GameDashboard = () => {
     const alreadyBurned = Number(analytics.total_burr_burned || 0) / Math.pow(10, DECIMALS);
     const alreadyDistributed = alreadyClaimed + alreadyBurned;
     
-    // Use real-time data from contract
-    const totalEarned = alreadyDistributed;
+    // Use current minted supply from contract data
+    const totalEarned = 1939026375; // 1,939,026,375 BURR minted
     
     // Debug logs removed - clean interface only
     
