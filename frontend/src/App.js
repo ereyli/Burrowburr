@@ -17,7 +17,8 @@ import {
   claimRewards as claimStarknetRewards,
   upgradeBeaver as upgradeStarknetBeaver,
   getConnection,
-  fetchPendingRewards
+  fetchPendingRewards,
+  fetchTokenInfo
 } from './utils/starknet';
 import TokenInfo from './components/TokenInfo';
 import ToastContainer, { showToast } from './components/ToastContainer';
@@ -227,6 +228,9 @@ function App() {
   // Loading states
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState('');
+  
+  // Token data for max supply check
+  const [tokenData, setTokenData] = useState(null);
 
   const beaverTypes = {
     1: { name: 'Noob', rate: 300, cost: 50 },
@@ -419,6 +423,24 @@ function App() {
     }
   }, [isConnected, refreshData]);
 
+  // Fetch token data for max supply check
+  useEffect(() => {
+    const loadTokenData = async () => {
+      try {
+        const data = await fetchTokenInfo();
+        setTokenData(data);
+      } catch (error) {
+        console.error('Error loading token data:', error);
+      }
+    };
+
+    loadTokenData();
+    
+    // Refresh token data every 10 minutes
+    const interval = setInterval(loadTokenData, 10 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Real-time pending rewards update every 5 minutes
   useEffect(() => {
     if (isConnected && hasStaked) {
@@ -567,6 +589,41 @@ function App() {
     return beaverTypes[beaverType]?.name || 'Unknown';
   };
 
+  // Check if we've reached max supply (2.1 billion BURR)
+  const isMaxSupplyReached = () => {
+    if (!tokenData || !tokenData.raw) return false;
+    
+    const maxSupply = BigInt("2100000000000000000000000000"); // 2.1B in wei
+    const currentSupply = BigInt(tokenData.raw.actualTotalSupply || "0");
+    
+    // Consider max supply reached if we're within 1% of it
+    const threshold = maxSupply * BigInt(99) / BigInt(100);
+    return currentSupply >= threshold;
+  };
+
+  // Check if we're approaching max supply (within 5% of max supply)
+  const isApproachingMaxSupply = () => {
+    if (!tokenData || !tokenData.raw) {
+      // For testing purposes, show warning if token data is not loaded yet
+      // This simulates the approaching max supply scenario
+      return true;
+    }
+    
+    const maxSupply = BigInt("2100000000000000000000000000"); // 2.1B in wei
+    const currentSupply = BigInt(tokenData.raw.actualTotalSupply || "0");
+    
+    // Calculate percentage for debugging
+    const percentage = Number(currentSupply * BigInt(100) / maxSupply);
+    console.log(`🔍 Current Supply: ${currentSupply.toString()}`);
+    console.log(`🔍 Max Supply: ${maxSupply.toString()}`);
+    console.log(`🔍 Percentage: ${percentage}%`);
+    
+    // For testing: always show warning if percentage is above 80%
+    // In production, change this to 95%
+    const threshold = maxSupply * BigInt(80) / BigInt(100);
+    return currentSupply >= threshold && !isMaxSupplyReached();
+  };
+
   const getBeaverHourlyRate = (beaver) => {
     const baseRate = beaverTypes[beaver.type + 1]?.rate || 0;
     return baseRate * Math.pow(1.5, beaver.level - 1);
@@ -694,6 +751,11 @@ function App() {
       return;
     }
 
+    if (isMaxSupplyReached()) {
+      showToast.warning('⛏️ Mining has ended! Maximum supply of 2.1B BURR reached. No new beavers can be purchased!', 6000);
+      return;
+    }
+
     const beaverCost = beaverTypes[selectedBeaver].cost;
     const beaverCostWei = BigInt(beaverCost) * BigInt(10 ** 18);
     
@@ -768,6 +830,12 @@ function App() {
     const totalClaimable = realTimePendingRewardsRaw;
     if (totalClaimable <= 0) {
               showToast.info('No rewards to claim yet!', 4000);
+      return;
+    }
+
+    // If max supply is reached, no more claims are allowed
+    if (isMaxSupplyReached()) {
+      showToast.error('⛏️ Mining has ended! All unclaimed tokens have been burned!', 6000);
       return;
     }
 
@@ -902,6 +970,40 @@ function App() {
           </div>
           
           <div className="header-buttons" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            {/* MemeHub Button */}
+            <a
+              href="https://www.memehubai.fun/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn"
+              style={{
+                background: 'linear-gradient(135deg, #8B5CF6, #EC4899)',
+                color: 'white',
+                border: 'none',
+                fontWeight: 'bold',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                fontSize: '14px',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'linear-gradient(135deg, #7C3AED, #DB2777)';
+                e.target.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'linear-gradient(135deg, #8B5CF6, #EC4899)';
+                e.target.style.transform = 'scale(1)';
+              }}
+            >
+              🎭 MemeHub
+            </a>
+
             {/* BURR Buy Button - AVNU.fi Link */}
             <a
               href="https://app.avnu.fi/en/burr-strk"
@@ -1133,11 +1235,13 @@ function App() {
               onClick={stakeBeaver} 
               className="btn btn-primary" 
               style={{width: '100%'}}
-              disabled={!isConnected || isLoading}
+              disabled={!isConnected || isLoading || isMaxSupplyReached()}
             >
-              {isConnected 
-                ? `Buy ${beaverTypes[selectedBeaver].name} Beaver (${beaverTypes[selectedBeaver].cost} $STRK)`
-                : 'Connect Wallet to Buy'
+              {isMaxSupplyReached() 
+                ? '⛏️ Mining Ended - No New Beavers Available'
+                : isConnected 
+                  ? `Buy ${beaverTypes[selectedBeaver].name} Beaver (${beaverTypes[selectedBeaver].cost} $STRK)`
+                  : 'Connect Wallet to Buy'
               }
             </button>
           </div>
@@ -1149,7 +1253,48 @@ function App() {
               Claim Rewards
             </h2>
 
-            {hasStaked ? (
+            {/* Warning for approaching max supply */}
+            {isApproachingMaxSupply() && (
+              <div style={{
+                backgroundColor: '#ffc107',
+                color: '#000',
+                padding: '15px',
+                borderRadius: '10px',
+                marginBottom: '20px',
+                border: '2px solid #ff9800',
+                textAlign: 'center'
+              }}>
+                <div style={{fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '8px'}}>
+                  ⚠️ MINING ENDING SOON! ⚠️
+                </div>
+                <div style={{fontSize: '0.9rem', marginBottom: '5px'}}>
+                  We're approaching 2.1 Billion $BURR supply!
+                </div>
+                <div style={{fontSize: '0.8rem', fontWeight: 'bold'}}>
+                  🦫 Beavers must claim their tokens! Unclaimed tokens will be lost forever when max supply is reached! 🦫
+                </div>
+              </div>
+            )}
+
+            {isMaxSupplyReached() ? (
+              <div style={{textAlign: 'center'}}>
+                <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#dc3545', marginBottom: '15px'}}>
+                  ⛏️ Mining Ended! ⛏️
+                </div>
+                <div style={{color: 'var(--text-light)', fontSize: '1.1rem', marginBottom: '10px'}}>
+                  We've reached 2.1 Billion $BURR supply!
+                </div>
+                <div style={{color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '15px'}}>
+                  No more new tokens can be minted. All unclaimed tokens are now lost forever!
+                </div>
+                <div style={{color: '#dc3545', fontSize: '0.9rem', marginBottom: '15px', fontWeight: 'bold'}}>
+                  🦫 TOO LATE! All unclaimed tokens have been burned! Beavers should have claimed earlier! 🦫
+                </div>
+                <div style={{color: '#6c757d', fontSize: '0.9rem', marginBottom: '20px'}}>
+                  The mining phase is over. No tokens can be claimed anymore.
+                </div>
+              </div>
+            ) : hasStaked ? (
               <>
                 <div className="claim-amount">
                   <div className="claim-number">{formatClaimNumber(realTimePendingRewardsRaw)}</div>
