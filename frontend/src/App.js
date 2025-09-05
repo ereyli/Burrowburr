@@ -589,17 +589,6 @@ function App() {
     return beaverTypes[beaverType]?.name || 'Unknown';
   };
 
-  // Check if we've reached max supply (2.1 billion BURR)
-  const isMaxSupplyReached = () => {
-    if (!tokenData || !tokenData.raw) return false;
-    
-    const maxSupply = BigInt("2100000000000000000000000000"); // 2.1B in wei
-    const currentSupply = BigInt(tokenData.raw.actualTotalSupply || "0");
-    
-    // Consider max supply reached if we're within 1% of it
-    const threshold = maxSupply * BigInt(99) / BigInt(100);
-    return currentSupply >= threshold;
-  };
 
   // Check if we're approaching max supply (within 5% of max supply)
   const isApproachingMaxSupply = () => {
@@ -621,7 +610,7 @@ function App() {
     // For testing: always show warning if percentage is above 80%
     // In production, change this to 95%
     const threshold = maxSupply * BigInt(80) / BigInt(100);
-    return currentSupply >= threshold && !isMaxSupplyReached();
+    return currentSupply >= threshold;
   };
 
   const getBeaverHourlyRate = (beaver) => {
@@ -751,10 +740,6 @@ function App() {
       return;
     }
 
-    if (isMaxSupplyReached()) {
-      showToast.warning('⛏️ Mining has ended! Maximum supply of 2.1B BURR reached. No new beavers can be purchased!', 6000);
-      return;
-    }
 
     const beaverCost = beaverTypes[selectedBeaver].cost;
     const beaverCostWei = BigInt(beaverCost) * BigInt(10 ** 18);
@@ -833,11 +818,6 @@ function App() {
       return;
     }
 
-    // If max supply is reached, no more claims are allowed
-    if (isMaxSupplyReached()) {
-      showToast.error('⛏️ Mining has ended! All unclaimed tokens have been burned!', 6000);
-      return;
-    }
 
     setIsLoading(true);
     setLoadingText('Claiming rewards...');
@@ -1235,13 +1215,11 @@ function App() {
               onClick={stakeBeaver} 
               className="btn btn-primary" 
               style={{width: '100%'}}
-              disabled={!isConnected || isLoading || isMaxSupplyReached()}
+              disabled={!isConnected || isLoading}
             >
-              {isMaxSupplyReached() 
-                ? '⛏️ Mining Ended - No New Beavers Available'
-                : isConnected 
-                  ? `Buy ${beaverTypes[selectedBeaver].name} Beaver (${beaverTypes[selectedBeaver].cost} $STRK)`
-                  : 'Connect Wallet to Buy'
+              {isConnected 
+                ? `Buy ${beaverTypes[selectedBeaver].name} Beaver (${beaverTypes[selectedBeaver].cost} $STRK)`
+                : 'Connect Wallet to Buy'
               }
             </button>
           </div>
@@ -1276,25 +1254,7 @@ function App() {
               </div>
             )}
 
-            {isMaxSupplyReached() ? (
-              <div style={{textAlign: 'center'}}>
-                <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#dc3545', marginBottom: '15px'}}>
-                  ⛏️ Mining Ended! ⛏️
-                </div>
-                <div style={{color: 'var(--text-light)', fontSize: '1.1rem', marginBottom: '10px'}}>
-                  We've reached 2.1 Billion $BURR supply!
-                </div>
-                <div style={{color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '15px'}}>
-                  No more new tokens can be minted. All unclaimed tokens are now lost forever!
-                </div>
-                <div style={{color: '#dc3545', fontSize: '0.9rem', marginBottom: '15px', fontWeight: 'bold'}}>
-                  🦫 TOO LATE! All unclaimed tokens have been burned! Beavers should have claimed earlier! 🦫
-                </div>
-                <div style={{color: '#6c757d', fontSize: '0.9rem', marginBottom: '20px'}}>
-                  The mining phase is over. No tokens can be claimed anymore.
-                </div>
-              </div>
-            ) : hasStaked ? (
+            {hasStaked ? (
               <>
                 <div className="claim-amount">
                   <div className="claim-number">{formatClaimNumber(realTimePendingRewardsRaw)}</div>
