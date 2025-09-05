@@ -9,8 +9,8 @@ const ClaimPanel = ({ hasStaked, accumulated, onClaim, tokenData }) => {
     const maxSupply = BigInt("2100000000000000000000000000"); // 2.1B in wei
     const currentSupply = BigInt(tokenData.raw.actualTotalSupply || "0");
     
-    // Consider max supply reached if we're within 1% of it
-    const threshold = maxSupply * BigInt(99) / BigInt(100);
+    // Only consider max supply reached if we're very close (99.9% of it)
+    const threshold = maxSupply * BigInt(999) / BigInt(1000);
     return currentSupply >= threshold;
   };
 
