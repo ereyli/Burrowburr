@@ -17,14 +17,12 @@ import {
   claimRewards as claimStarknetRewards,
   upgradeBeaver as upgradeStarknetBeaver,
   getConnection,
-  fetchPendingRewards,
-  fetchTokenInfo
+  fetchPendingRewards
 } from './utils/starknet';
-import TokenInfo from './components/TokenInfo';
 import ToastContainer, { showToast } from './components/ToastContainer';
 import Header from './components/Header';
-import GameDashboard from './components/GameDashboard';
-import BeaverMiningAnimation from './components/BeaverMiningAnimation';
+import TokenStats from './components/TokenStats';
+// import BeaverMiningAnimation from './components/BeaverMiningAnimation'; // Mining ended!
 import './index.css';
 
 
@@ -210,8 +208,9 @@ function App() {
   const [strkBalanceRaw, setStrkBalanceRaw] = useState(BigInt(0)); // Raw balance for calculations
   const [workingStrkAddress, setWorkingStrkAddress] = useState(null);
 
-  // Game state
+  // Game state - MINING ENDED!
   const [selectedBeaver, setSelectedBeaver] = useState(1); // 1=Noob, 2=Pro, 3=Degen
+  const [miningEnded, setMiningEnded] = useState(true); // Mining has ended!
   
   // Player info from contract
   const [hasStaked, setHasStaked] = useState(false);
@@ -228,9 +227,6 @@ function App() {
   // Loading states
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState('');
-  
-  // Token data for max supply check
-  const [tokenData, setTokenData] = useState(null);
 
   const beaverTypes = {
     1: { name: 'Noob', rate: 300, cost: 50 },
@@ -422,24 +418,6 @@ function App() {
       return () => clearInterval(interval);
     }
   }, [isConnected, refreshData]);
-
-  // Fetch token data for max supply check
-  useEffect(() => {
-    const loadTokenData = async () => {
-      try {
-        const data = await fetchTokenInfo();
-        setTokenData(data);
-      } catch (error) {
-        console.error('Error loading token data:', error);
-      }
-    };
-
-    loadTokenData();
-    
-    // Refresh token data every 10 minutes
-    const interval = setInterval(loadTokenData, 10 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Real-time pending rewards update every 5 minutes
   useEffect(() => {
@@ -751,11 +729,6 @@ function App() {
       return;
     }
 
-    if (isMaxSupplyReached()) {
-      showToast.warning('⛏️ Mining has ended! Maximum supply of 2.1B BURR reached. No new beavers can be purchased!', 6000);
-      return;
-    }
-
     const beaverCost = beaverTypes[selectedBeaver].cost;
     const beaverCostWei = BigInt(beaverCost) * BigInt(10 ** 18);
     
@@ -830,12 +803,6 @@ function App() {
     const totalClaimable = realTimePendingRewardsRaw;
     if (totalClaimable <= 0) {
               showToast.info('No rewards to claim yet!', 4000);
-      return;
-    }
-
-    // If max supply is reached, no more claims are allowed
-    if (isMaxSupplyReached()) {
-      showToast.error('⛏️ Mining has ended! All unclaimed tokens have been burned!', 6000);
       return;
     }
 
@@ -961,6 +928,7 @@ function App() {
         </div>
       )}
 
+
       {/* Header */}
       <header className="header">
         <div className="header-content">
@@ -970,40 +938,6 @@ function App() {
           </div>
           
           <div className="header-buttons" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            {/* MemeHub Button */}
-            <a
-              href="https://www.memehubai.fun/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn"
-              style={{
-                background: 'linear-gradient(135deg, #8B5CF6, #EC4899)',
-                color: 'white',
-                border: 'none',
-                fontWeight: 'bold',
-                borderRadius: '8px',
-                padding: '8px 16px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                fontSize: '14px',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.background = 'linear-gradient(135deg, #7C3AED, #DB2777)';
-                e.target.style.transform = 'scale(1.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'linear-gradient(135deg, #8B5CF6, #EC4899)';
-                e.target.style.transform = 'scale(1)';
-              }}
-            >
-              🎭 MemeHub
-            </a>
-
             {/* BURR Buy Button - AVNU.fi Link */}
             <a
               href="https://app.avnu.fi/en/burr-strk"
@@ -1036,6 +970,42 @@ function App() {
               }}
             >
               Buy $BURR
+            </a>
+
+            {/* MemeHub Button */}
+            <a
+              href="https://memehubai.fun"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn"
+              style={{
+                background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+                color: 'white',
+                border: 'none',
+                fontWeight: 'bold',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                fontSize: '14px',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'linear-gradient(135deg, #7c3aed, #db2777)';
+                e.target.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'linear-gradient(135deg, #8b5cf6, #ec4899)';
+                e.target.style.transform = 'scale(1)';
+              }}
+            >
+              <span style={{ fontSize: '1rem' }}>🎭</span>
+              MemeHub
             </a>
 
             {/* View Contract Button - Voyager Link */}
@@ -1194,440 +1164,195 @@ function App() {
           </div>
         )}
 
-        {/* Token Info */}
-        <TokenInfo />
 
-        {/* Game Dashboard */}
-        <GameDashboard 
-          hasStaked={hasStaked}
-          beavers={beavers}
-          onUpgrade={upgradeBeaver}
-          realTimePendingRewardsRaw={realTimePendingRewardsRaw}
-          onClaim={claimRewards}
-        />
-
-        <div className="grid grid-2">
-          {/* Stake Section */}
-          <div className="card">
-            <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <img src="/beaver_logo.png" alt="Beaver" style={{ width: '28px', height: '28px' }} className="image-container" />
-              Beaver Store
-            </h2>
-            
-            <div className="beaver-grid">
-              {Object.entries(beaverTypes).map(([key, beaver]) => (
-                <div
-                  key={key}
-                  className={`beaver-option ${selectedBeaver === parseInt(key) ? 'selected' : ''}`}
-                  onClick={() => setSelectedBeaver(parseInt(key))}
-                >
-                  <div className="beaver-emoji">
-                    <BeaverImage beaverType={parseInt(key)} size="70px" />
-                  </div>
-                  <div className="beaver-name">{beaver.name}</div>
-                  <div className="beaver-rate">{beaver.rate} $BURR/hour</div>
-                  <div className="beaver-cost">Cost: {beaver.cost} $STRK</div>
-                </div>
-              ))}
+        {/* MINING ENDED MESSAGE WITH MEME */}
+        <div className="card" style={{
+          background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
+          border: '3px solid #ff6b35',
+          textAlign: 'center',
+          padding: '20px',
+          marginBottom: '30px',
+          overflow: 'hidden'
+        }}>
+          {/* Meme Image */}
+          <div style={{
+            marginBottom: '20px',
+            borderRadius: '15px',
+            overflow: 'hidden',
+            boxShadow: '0 8px 25px rgba(255, 107, 53, 0.3)'
+          }}>
+            <img 
+              src="/burr meme .png" 
+              alt="Mining Season Completed - Price Discovery Next" 
+              style={{
+                width: '100%',
+                maxWidth: '600px',
+                height: 'auto',
+                borderRadius: '15px',
+                display: 'block',
+                margin: '0 auto'
+              }}
+            />
+          </div>
+          
+          {/* Additional Message */}
+          <div style={{
+            background: 'linear-gradient(135deg, #ff6b35, #f7931e)',
+            padding: '20px',
+            borderRadius: '15px',
+            marginTop: '15px'
+          }}>
+            <p style={{
+              color: 'white',
+              fontSize: '1.2rem',
+              marginBottom: '10px',
+              textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+            }}>
+              🦫 "We dug deep, we dug hard, and now we rest! Time to enjoy our rewards!" 🦫
+            </p>
+          
+            {/* BUY BURR Button */}
+            <div style={{
+              marginTop: '20px',
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <button
+                onClick={() => window.open('https://app.avnu.fi/en/burr-strk', '_blank')}
+                style={{
+                  background: 'linear-gradient(135deg, #ff6b35, #f7931e)',
+                  border: '3px solid #ffd700',
+                  color: 'white',
+                  padding: '15px 30px',
+                  borderRadius: '25px',
+                  fontSize: '1.3rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 15px rgba(255, 215, 0, 0.4)',
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.transform = 'scale(1.05)';
+                  e.target.style.boxShadow = '0 6px 20px rgba(255, 215, 0, 0.6)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = 'scale(1)';
+                  e.target.style.boxShadow = '0 4px 15px rgba(255, 215, 0, 0.4)';
+                }}
+              >
+                🚀 BUY $BURR NOW! 🚀
+              </button>
             </div>
             
-            <button 
-              onClick={stakeBeaver} 
-              className="btn btn-primary" 
-              style={{width: '100%'}}
-              disabled={!isConnected || isLoading || isMaxSupplyReached()}
-            >
-              {isMaxSupplyReached() 
-                ? '⛏️ Mining Ended - No New Beavers Available'
-                : isConnected 
-                  ? `Buy ${beaverTypes[selectedBeaver].name} Beaver (${beaverTypes[selectedBeaver].cost} $STRK)`
-                  : 'Connect Wallet to Buy'
-              }
-            </button>
+            <div style={{
+              marginTop: '15px',
+              color: '#ffd700',
+              fontSize: '0.9rem',
+              fontStyle: 'italic'
+            }}>
+              💡 Trade $BURR on AVNU DEX
+            </div>
           </div>
+        </div>
 
-          {/* Claim Section */}
+        <div className="grid grid-2">
+          {/* Supply Information */}
           <div className="card">
             <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <img src="/beaver_logo.png" alt="Beaver" style={{ width: '28px', height: '28px' }} className="image-container" />
-              Claim Rewards
+              📊 Final Supply Statistics
             </h2>
-
-            {/* Warning for approaching max supply */}
-            {isApproachingMaxSupply() && (
+            
+            <div style={{padding: '20px', textAlign: 'center'}}>
               <div style={{
-                backgroundColor: '#ffc107',
-                color: '#000',
+                backgroundColor: 'var(--accent-orange)',
+                color: 'white',
                 padding: '15px',
                 borderRadius: '10px',
-                marginBottom: '20px',
-                border: '2px solid #ff9800',
-                textAlign: 'center'
+                marginBottom: '15px'
               }}>
-                <div style={{fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '8px'}}>
-                  ⚠️ MINING ENDING SOON! ⚠️
+                <div style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '5px'}}>
+                  Total Supply
                 </div>
-                <div style={{fontSize: '0.9rem', marginBottom: '5px'}}>
-                  We're approaching 2.1 Billion $BURR supply!
-                </div>
-                <div style={{fontSize: '0.8rem', fontWeight: 'bold'}}>
-                  🦫 Beavers must claim their tokens! Unclaimed tokens will be lost forever when max supply is reached! 🦫
+                <div style={{fontSize: '2rem', fontWeight: 'bold'}}>
+                  2,100,000,000 $BURR
                 </div>
               </div>
-            )}
+              
+              <div style={{
+                backgroundColor: 'var(--accent-red)',
+                color: 'white',
+                padding: '15px',
+                borderRadius: '10px',
+                marginBottom: '15px'
+              }}>
+                <div style={{fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '5px'}}>
+                  Total Burned
+                </div>
+                <div style={{fontSize: '1.8rem', fontWeight: 'bold'}}>
+                  262,646,000 $BURR
+                </div>
+              </div>
+              
+              <div style={{
+                backgroundColor: 'var(--accent-blue)',
+                color: 'white',
+                padding: '15px',
+                borderRadius: '10px'
+              }}>
+                <div style={{fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '5px'}}>
+                  💫 Circulating Supply
+                </div>
+                <div style={{fontSize: '1.8rem', fontWeight: 'bold'}}>
+                  1,837,354,000 $BURR
+                </div>
+              </div>
+            </div>
+          </div>
 
-            {isMaxSupplyReached() ? (
-              <div style={{textAlign: 'center'}}>
-                <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#dc3545', marginBottom: '15px'}}>
-                  ⛏️ Mining Ended! ⛏️
-                </div>
-                <div style={{color: 'var(--text-light)', fontSize: '1.1rem', marginBottom: '10px'}}>
-                  We've reached 2.1 Billion $BURR supply!
-                </div>
-                <div style={{color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '15px'}}>
-                  No more new tokens can be minted. All unclaimed tokens are now lost forever!
-                </div>
-                <div style={{color: '#dc3545', fontSize: '0.9rem', marginBottom: '15px', fontWeight: 'bold'}}>
-                  🦫 TOO LATE! All unclaimed tokens have been burned! Beavers should have claimed earlier! 🦫
-                </div>
-                <div style={{color: '#6c757d', fontSize: '0.9rem', marginBottom: '20px'}}>
-                  The mining phase is over. No tokens can be claimed anymore.
-                </div>
-              </div>
-            ) : hasStaked ? (
+          {/* Your BURR Balance */}
+          <div className="card">
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <img src="/beaver_logo.png" alt="Beaver" style={{ width: '28px', height: '28px' }} className="image-container" />
+              💰 Your $BURR Balance
+            </h2>
+
+            {isConnected ? (
               <>
                 <div className="claim-amount">
-                  <div className="claim-number">{formatClaimNumber(realTimePendingRewardsRaw)}</div>
+                  <div className="claim-number">{burrBalance}</div>
                   <div style={{color: 'var(--accent-orange)', fontWeight: 'bold'}}>$BURR</div>
                 </div>
                 
                 <div style={{color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '15px'}}>
-                  <div>📊 Data updates every 5 minutes</div>
+                  <div>🎯 Your total $BURR holdings</div>
                 </div>
 
-                <button 
-                  onClick={claimRewards} 
-                  className={`btn ${realTimePendingRewardsRaw > 0 ? 'btn-success' : 'btn-disabled'}`}
-                  style={{width: '100%'}}
-                  disabled={realTimePendingRewardsRaw <= 0 || isLoading}
-                >
-                  {realTimePendingRewardsRaw > 0 
-                    ? `Claim ${formatClaimNumber(realTimePendingRewardsRaw)} $BURR` 
-                    : 'No Rewards Yet'}
-                </button>
-                
-                <div className="mining-status">
-                  <span className="pulse">⛏️</span> Your beavers are working hard underground! <span className="pulse">⛏️</span>
+                <div style={{
+                  background: 'linear-gradient(135deg, #ff6b35, #f7931e)',
+                  padding: '15px',
+                  borderRadius: '10px',
+                  textAlign: 'center',
+                  color: 'white',
+                  fontWeight: 'bold'
+                }}>
+                  🏆 Mining Season Complete - All tokens earned!
                 </div>
               </>
             ) : (
               <div style={{textAlign: 'center', color: 'var(--text-light)'}}>
-                Buy a beaver to start earning rewards!
+                Connect your wallet to view your $BURR balance!
               </div>
             )}
           </div>
         </div>
 
-        {/* Mining Fleet - Only show if has staked beavers */}
-        {hasStaked && beavers.length > 0 && (
-          <>
-            {/* Beaver Mining Animation */}
-            <div className="card">
-              <h2 style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '10px',
-                color: 'var(--accent-orange)',
-                marginBottom: '20px'
-              }}>
-                <img src="/beaver_logo.png" alt="Beaver" style={{ width: '28px', height: '28px' }} className="image-container" />
-                Mining Animation
-              </h2>
-              <BeaverMiningAnimation />
-            </div>
-
-            <div className="card">
-              <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <img src="/beaver_logo.png" alt="Beaver" style={{ width: '32px', height: '32px' }} className="image-container" />
-                <span>⛏️</span>
-                <span style={{marginLeft: '10px'}}>Your Mining Fleet ({beavers.length} Beavers)</span>
-              </h2>
-            
-              <div className="all-beavers">
-                <div style={{marginBottom: '15px', textAlign: 'center'}}>
-                  <div style={{color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '5px'}}>
-                    💡 Click on any beaver to upgrade it
-                  </div>
-                  <div style={{color: 'var(--accent-orange)', fontWeight: 'bold'}}>
-                    Total Fleet Rate: {formatNumber(beavers.reduce((total, beaver) => total + getBeaverHourlyRate(beaver), 0))} $BURR/hour
-                  </div>
-                </div>
-                
-                <div className="beaver-fleet-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px'}}>
-                  {beavers.map((beaver, index) => (
-                    <div 
-                      key={`${beaver.id}-${beaver.type}-${beaver.level}-${index}`} 
-                      className="active-beaver upgrade-hover"
-                      onClick={() => upgradeBeaver(beaver)}
-                      style={{
-                        cursor: 'pointer',
-                        position: 'relative'
-                      }}
-                    >
-                      {beaver.level < 5 && (
-                        <div className="upgrade-indicator">
-                          ⬆️ Click to Upgrade
-                        </div>
-                      )}
-                      <div className="beaver-info">
-                        <div style={{display: 'flex', justifyContent: 'center', marginBottom: '8px'}}>
-                          {getBeaverEmoji(beaver.type + 1)}
-                        </div>
-                        <div>
-                          <div style={{fontSize: '1.1rem', fontWeight: 'bold'}}>
-                            {getBeaverTypeString(beaver.type + 1)} #{beaver.id}
-                          </div>
-                          <div style={{color: 'var(--text-light)'}}>
-                            Level {beaver.level} {beaver.level === 5 ? '(MAX)' : ''}
-                          </div>
-                          {beaver.level < 5 && (
-                            <div style={{color: 'var(--accent-green)', fontSize: '0.8rem'}}>
-                              Upgrade: {formatNumber(getUpgradeCost(beaver.type, beaver.level))} $BURR
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="beaver-stats">
-                        <div style={{color: 'var(--accent-orange)', fontWeight: 'bold'}}>
-                          {formatNumber(getBeaverHourlyRate(beaver))} $BURR/hour
-                        </div>
-                        <div style={{color: 'var(--text-light)', fontSize: '0.8rem'}}>
-                          🔥 ACTIVELY MINING 🔥
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+        {/* Final Beaver Collection removed - Mining season completed */}
 
 
       </div>
 
-      {/* Rewards Information Table */}
-      <div className="card" style={{margin: '40px auto', maxWidth: '1200px'}}>
-        <h2 style={{textAlign: 'center', marginBottom: '30px'}}>
-          Beaver Earnings & Costs Guide
-        </h2>
-        
-        {/* Hourly Earnings Table */}
-        <div style={{marginBottom: '30px'}}>
-          <h3 style={{color: 'var(--accent-orange)', marginBottom: '15px', textAlign: 'center'}}>
-            Hourly Earnings by Type & Level
-          </h3>
-          <div style={{overflowX: 'auto'}}>
-            <table style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '10px',
-              overflow: 'hidden'
-            }}>
-              <thead>
-                <tr style={{backgroundColor: 'var(--accent-orange)', color: 'white'}}>
-                  <th style={{padding: '12px', textAlign: 'left', fontWeight: 'bold'}}>Beaver Type</th>
-                  <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold'}}>Level 1</th>
-                  <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold'}}>Level 2</th>
-                  <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold'}}>Level 3</th>
-                  <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold'}}>Level 4</th>
-                  <th style={{padding: '12px', textAlign: 'center', fontWeight: 'bold'}}>Level 5</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{borderBottom: '1px solid var(--border-color)'}}>
-                  <td style={{padding: '12px', fontWeight: 'bold', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                    <BeaverImage beaverType={1} size="20px" />
-                    Noob
-                  </td>
-                  <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>300</td>
-                  <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>450</td>
-                  <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>675</td>
-                  <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>1,013</td>
-                  <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)', fontWeight: 'bold'}}>1,519</td>
-                </tr>
-                <tr style={{borderBottom: '1px solid var(--border-color)'}}>
-                  <td style={{padding: '12px', fontWeight: 'bold', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                    <BeaverImage beaverType={2} size="20px" />
-                    Pro
-                  </td>
-                  <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>750</td>
-                  <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>1,125</td>
-                  <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>1,688</td>
-                  <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>2,531</td>
-                  <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)', fontWeight: 'bold'}}>3,797</td>
-                </tr>
-                <tr>
-                  <td style={{padding: '12px', fontWeight: 'bold', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                    <BeaverImage beaverType={3} size="20px" />
-                    Degen
-                  </td>
-                  <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>2,250</td>
-                  <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>3,375</td>
-                  <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>5,063</td>
-                  <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)'}}>7,594</td>
-                  <td style={{padding: '12px', textAlign: 'center', color: 'var(--accent-orange)', fontWeight: 'bold'}}>11,391</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div style={{textAlign: 'center', marginTop: '10px', color: 'var(--text-light)', fontSize: '0.9rem'}}>
-            * All values in $BURR per hour
-          </div>
-        </div>
-
-        {/* Costs and Info */}
-        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px'}}>
-          {/* Purchase Costs */}
-          <div style={{
-            backgroundColor: 'var(--card-bg)', 
-            padding: '20px', 
-            borderRadius: '10px',
-            border: '2px solid var(--accent-blue)'
-          }}>
-            <h4 style={{color: 'var(--accent-blue)', marginBottom: '15px', textAlign: 'center'}}>
-              Purchase Costs
-            </h4>
-            <div style={{lineHeight: '1.8'}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <BeaverImage beaverType={1} size="16px" />
-                  Noob:
-                </span>
-                <strong style={{color: 'var(--accent-orange)'}}>50 $STRK</strong>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <BeaverImage beaverType={2} size="16px" />
-                  Pro:
-                </span>
-                <strong style={{color: 'var(--accent-orange)'}}>120 $STRK</strong>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <BeaverImage beaverType={3} size="16px" />
-                  Degen:
-                </span>
-                <strong style={{color: 'var(--accent-orange)'}}>350 $STRK</strong>
-              </div>
-            </div>
-          </div>
-
-          {/* Level Multipliers */}
-          <div style={{
-            backgroundColor: 'var(--card-bg)', 
-            padding: '20px', 
-            borderRadius: '10px',
-            border: '2px solid var(--accent-green)'
-          }}>
-            <h4 style={{color: 'var(--accent-green)', marginBottom: '15px', textAlign: 'center'}}>
-              📈 Level Multipliers
-            </h4>
-            <div style={{lineHeight: '1.8'}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
-                <span>Level 1:</span>
-                <strong style={{color: 'var(--accent-orange)'}}>1.00x</strong>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
-                <span>Level 2:</span>
-                <strong style={{color: 'var(--accent-orange)'}}>1.50x</strong>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
-                <span>Level 3:</span>
-                <strong style={{color: 'var(--accent-orange)'}}>2.25x</strong>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
-                <span>Level 4:</span>
-                <strong style={{color: 'var(--accent-orange)'}}>3.38x</strong>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                <span>Level 5:</span>
-                <strong style={{color: 'var(--accent-orange)'}}>5.06x</strong>
-              </div>
-            </div>
-          </div>
-
-          {/* Upgrade Costs */}
-          <div style={{
-            backgroundColor: 'var(--card-bg)', 
-            padding: '20px', 
-            borderRadius: '10px',
-            border: '2px solid var(--accent-red)'
-          }}>
-            <h4 style={{color: 'var(--accent-red)', marginBottom: '15px', textAlign: 'center'}}>
-              Total Upgrade Costs
-            </h4>
-            <div style={{lineHeight: '1.8'}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <BeaverImage beaverType={1} size="16px" />
-                  Noob:
-                </span>
-                <strong style={{color: 'var(--accent-orange)'}}>240K $BURR</strong>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <BeaverImage beaverType={2} size="16px" />
-                  Pro:
-                </span>
-                <strong style={{color: 'var(--accent-orange)'}}>480K $BURR</strong>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <BeaverImage beaverType={3} size="16px" />
-                  Degen:
-                </span>
-                <strong style={{color: 'var(--accent-orange)'}}>1.22M $BURR</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Daily Earnings Highlight */}
-        <div style={{
-          marginTop: '25px',
-          padding: '20px',
-          backgroundColor: 'linear-gradient(135deg, var(--accent-orange), var(--accent-red))',
-          borderRadius: '15px',
-          textAlign: 'center',
-          color: 'white'
-        }}>
-          <h4 style={{marginBottom: '15px', fontSize: '1.1rem'}}>
-            Max Daily Earnings (Level 5)
-          </h4>
-          <div style={{display: 'flex', justifyContent: 'center', gap: '30px', flexWrap: 'wrap'}}>
-            <div>
-              <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <BeaverImage beaverType={1} size="18px" />
-                Noob:
-              </strong> <span style={{fontSize: '1.1rem'}}>36,450 $BURR</span>
-            </div>
-            <div>
-              <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <BeaverImage beaverType={2} size="18px" />
-                Pro:
-              </strong> <span style={{fontSize: '1.1rem'}}>91,125 $BURR</span>
-            </div>
-            <div>
-              <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <BeaverImage beaverType={3} size="18px" />
-                Degen:
-              </strong> <span style={{fontSize: '1.1rem'}}>273,375 $BURR</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Welcome Message */}
       {!isConnected && (
@@ -1756,9 +1481,10 @@ function App() {
             © 2025 BurrowBurr. Built with ❤️ for the meme mining community on Starknet.
           </div>
         </div>
+      {/* Token Statistics - X hesabı follow butonunun üstünde */}
+      <TokenStats />
+
       </footer>
-
-
       
       {/* Toast Notifications */}
       <ToastContainer />
