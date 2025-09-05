@@ -567,17 +567,6 @@ function App() {
     return beaverTypes[beaverType]?.name || 'Unknown';
   };
 
-  // Check if we've reached max supply (2.1 billion BURR)
-  const isMaxSupplyReached = () => {
-    if (!tokenData || !tokenData.raw) return false;
-    
-    const maxSupply = BigInt("2100000000000000000000000000"); // 2.1B in wei
-    const currentSupply = BigInt(tokenData.raw.actualTotalSupply || "0");
-    
-    // Consider max supply reached if we're within 1% of it
-    const threshold = maxSupply * BigInt(99) / BigInt(100);
-    return currentSupply >= threshold;
-  };
 
   // Check if we're approaching max supply (within 5% of max supply)
   const isApproachingMaxSupply = () => {
@@ -599,7 +588,7 @@ function App() {
     // For testing: always show warning if percentage is above 80%
     // In production, change this to 95%
     const threshold = maxSupply * BigInt(80) / BigInt(100);
-    return currentSupply >= threshold && !isMaxSupplyReached();
+    return currentSupply >= threshold;
   };
 
   const getBeaverHourlyRate = (beaver) => {
@@ -728,7 +717,6 @@ function App() {
               showToast.warning('Please connect your wallet first', 4000);
       return;
     }
-
     const beaverCost = beaverTypes[selectedBeaver].cost;
     const beaverCostWei = BigInt(beaverCost) * BigInt(10 ** 18);
     
@@ -805,7 +793,6 @@ function App() {
               showToast.info('No rewards to claim yet!', 4000);
       return;
     }
-
     setIsLoading(true);
     setLoadingText('Claiming rewards...');
 
