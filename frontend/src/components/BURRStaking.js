@@ -351,7 +351,7 @@ const BURRStaking = ({ isConnected, walletAddress, burrBalance }) => {
             }}>
               <span>Available:</span>
               <span style={{ fontWeight: '600', color: '#ff6b35' }}>
-                {isConnected ? `${formatBalance(burrBalance)} BURR` : '0.00 BURR'}
+                {isConnected ? `${burrBalance} BURR` : '0.00 BURR'}
               </span>
             </div>
             <button
