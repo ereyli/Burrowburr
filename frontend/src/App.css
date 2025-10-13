@@ -1,0 +1,27 @@
+/* Additional Burrow dApp Styles */
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr !important;
+}
+
+  .text-4xl {
+    font-size: 2rem;
+  }
+  
+  .text-3xl {
+    font-size: 1.5rem;
+}
+
+  .p-6 {
+    padding: 1rem;
+}
+}
+
+/* Focus states for accessibility */
+button:focus,
+.cursor-pointer:focus {
+  outline: 2px solid var(--burrow-orange);
+  outline-offset: 2px;
+}

@@ -1,0 +1,8 @@
+[sncast.default]
+account = "deployer"
+url = "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_9/EXk1VtDVCaeNBRAWsi7WA"
+
+[sncast.account.deployer]
+account = "0x049c97B55f2eF9523B50A61E66E8749F0c1F447C3a4e46944A0ED8b2EdD305ac"
+# Private key removed for security - use keystore file instead
+keystore = "mainnet_deployer.json"
