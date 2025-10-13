@@ -1,0 +1,13 @@
+[package]
+name = "burrow_verify"
+version = "0.1.0"
+edition = "2024_07"
+license = "MIT"
+
+[dependencies]
+starknet = "2.11.4"
+openzeppelin = "2.0.0"
+
+[[target.starknet-contract]]
+sierra = true
+casm = true 
