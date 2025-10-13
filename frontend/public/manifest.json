@@ -1,0 +1,37 @@
+{
+  "short_name": "Burrow Game",
+  "name": "Burrow Game - $BURR Mining",
+  "description": "Ultimate meme mining game on Starknet! Stake beavers, mine $BURR tokens, and earn rewards.",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "beaver_logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "beaver_logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1E90FF",
+  "background_color": "#8B4513",
+  "categories": ["games", "finance", "entertainment"]
+}
