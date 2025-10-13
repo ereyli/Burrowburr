@@ -608,33 +608,44 @@ export async function autoReconnectWallet() {
 // Helper function to safely convert balance
 function safeBalanceConvert(balance) {
     try {
-        if (!balance) return BigInt(0);
+        if (!balance) {
+            console.log('⚠️ No balance provided, returning 0');
+            return BigInt(0);
+        }
         
-        console.log('Converting balance:', balance, 'Type:', typeof balance);
+        console.log('🔄 Converting balance:', balance, 'Type:', typeof balance);
         
         // Handle different response formats
         if (typeof balance === 'object') {
             // Log object details for debugging
-            console.log('Object keys:', Object.keys(balance));
-            console.log('Object values:', Object.values(balance));
+            console.log('📦 Object keys:', Object.keys(balance));
+            console.log('📦 Object values:', Object.values(balance));
             
             // Case 1: {balance: BigInt}
             if (balance.balance !== undefined) {
+                console.log('✅ Found balance.balance:', balance.balance);
                 return BigInt(balance.balance);
             }
             
             // Case 2: Uint256 format {low, high}
             if (balance.low !== undefined && balance.high !== undefined) {
-                return BigInt(balance.low) + (BigInt(balance.high) << BigInt(128));
+                console.log('✅ Found Uint256 format - low:', balance.low, 'high:', balance.high);
+                const result = BigInt(balance.low) + (BigInt(balance.high) << BigInt(128));
+                console.log('✅ Uint256 result:', result.toString());
+                return result;
             }
             
             // Case 3: Array format [low, high]
             if (Array.isArray(balance) && balance.length >= 2) {
-                return BigInt(balance[0]) + (BigInt(balance[1]) << BigInt(128));
+                console.log('✅ Found array format - [0]:', balance[0], '[1]:', balance[1]);
+                const result = BigInt(balance[0]) + (BigInt(balance[1]) << BigInt(128));
+                console.log('✅ Array result:', result.toString());
+                return result;
             }
             
             // Case 4: Single item array
             if (Array.isArray(balance) && balance.length === 1) {
+                console.log('✅ Found single item array:', balance[0]);
                 return BigInt(balance[0]);
             }
             
@@ -661,13 +672,16 @@ function safeBalanceConvert(balance) {
         }
         
         if (typeof balance === 'bigint') {
+            console.log('✅ Found BigInt balance:', balance.toString());
             return balance;
         }
         
         if (typeof balance === 'number') {
+            console.log('✅ Found number balance:', balance);
             return BigInt(balance);
         }
         
+        console.log('⚠️ Unknown balance format, attempting BigInt conversion:', balance);
         return BigInt(balance);
     } catch (error) {
         console.log('Balance conversion error:', error, 'Input:', balance);
@@ -998,14 +1012,19 @@ export async function fetchBalances(address) {
     
     // Fetch BURR balance with explicit latest block
     try {
+        console.log("🔍 Fetching BURR balance for address:", address);
+        console.log("🔍 Using BURR token address:", BURR_TOKEN_ADDRESS);
         const burrContract = new Contract(ERC20_ABI, BURR_TOKEN_ADDRESS, provider);
         // Use call with explicit latest block
         const burrResult = await burrContract.call('balance_of', [address], { blockIdentifier: 'latest' });
-        console.log("Raw BURR balance:", burrResult);
+        console.log("✅ Raw BURR balance response:", burrResult);
+        console.log("✅ Raw BURR balance type:", typeof burrResult);
         burrBalance = safeBalanceConvert(burrResult);
-        console.log("Converted BURR balance:", burrBalance.toString());
+        console.log("✅ Converted BURR balance:", burrBalance.toString());
+        console.log("✅ Formatted BURR balance:", (Number(burrBalance) / 1e18).toFixed(2));
     } catch (error) {
-        console.log("BURR balance error:", error);
+        console.error("❌ BURR balance error:", error);
+        console.error("❌ Error details:", error.message);
     }
     
     // Try each STRK address to find the working one
@@ -1031,13 +1050,21 @@ export async function fetchBalances(address) {
     }
     
     console.log("Final balances - BURR:", burrBalance.toString(), "STRK:", strkBalance.toString());
+    console.log("BURR balance type:", typeof burrBalance);
+    console.log("BURR balance value:", burrBalance);
+    
+    const burrFormatted = formatBalance(burrBalance, 18);
+    const strkFormatted = formatBalance(strkBalance, 18);
+    
+    console.log("Formatted balances - BURR:", burrFormatted, "STRK:", strkFormatted);
+    console.log("Returning object:", { burrBalance, strkBalance, workingStrkAddress, burrFormatted, strkFormatted });
     
     return {
         burrBalance,
         strkBalance,
         workingStrkAddress,
-        burrFormatted: formatBalance(burrBalance, 18),
-        strkFormatted: formatBalance(strkBalance, 18)
+        burrFormatted,
+        strkFormatted
     };
 }
 
