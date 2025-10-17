@@ -2188,8 +2188,8 @@ export async function fetchStakingData(userAddress) {
         const apy = Math.round((rewardRateNum * 365 * 24 * 3600) / (10**18) * 100);
         console.log('🔢 Calculated APY:', apy, '%');
         
-        // Ensure APY is displayed as 50% (matching contract's 50% APY)
-        const displayAPY = 50;
+            // Ensure APY is displayed as 40% (matching contract's 40% APY)
+            const displayAPY = 40;
 
         // Check for unstake requests (if function exists)
         let unstakeAmount = '0';
@@ -2278,7 +2278,7 @@ export async function fetchStakingData(userAddress) {
             pendingRewards: uint256ToBigInt(pendingRewards).toString(),
             totalStaked: totalStaked,
             rewardPool: rewardPool,
-            apy: displayAPY, // Use fixed 50% APY display
+            apy: displayAPY, // Use fixed 40% APY display
             unstakeAmount: unstakeAmount, // Keep as BigInt string for calculations
             canWithdraw: canWithdraw,
             withdrawalDate: withdrawalDate
@@ -2297,7 +2297,7 @@ export async function fetchStakingData(userAddress) {
             pendingRewards: 0,
             totalStaked: 0,
             rewardPool: 0,
-            apy: 50, // Fixed 50% APY
+            apy: 40, // Fixed 40% APY
             unstakeAmount: 0,
             canWithdraw: false,
             withdrawalDate: null
