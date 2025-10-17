@@ -15,7 +15,7 @@ const BURRStaking = ({ isConnected, walletAddress, burrBalance }) => {
     pendingRewards: 0,
     totalStaked: 0,
     rewardPool: 0,
-    apy: 70,
+    apy: 40,
     unstakeAmount: 0,
     canWithdraw: false,
     withdrawalDate: null
@@ -86,7 +86,7 @@ const BURRStaking = ({ isConnected, walletAddress, burrBalance }) => {
           pendingRewards: data.pendingRewards || 0,
           totalStaked: data.totalStaked || 0,
           rewardPool: data.rewardPool || 0,
-          apy: data.apy || 70,
+          apy: data.apy || 40,
           unstakeAmount: data.unstakeAmount || 0,
           canWithdraw: data.canWithdraw || false,
           withdrawalDate: data.withdrawalDate || null
@@ -103,7 +103,7 @@ const BURRStaking = ({ isConnected, walletAddress, burrBalance }) => {
             ...prev,
             totalStaked: data.totalStaked || 0,
             rewardPool: data.rewardPool || 0,
-            apy: data.apy || 70
+            apy: data.apy || 40
           }));
         } catch (globalError) {
           console.log('⚠️ Could not fetch global data, using defaults');
@@ -111,7 +111,7 @@ const BURRStaking = ({ isConnected, walletAddress, burrBalance }) => {
             ...prev,
             totalStaked: 0,
             rewardPool: 0,
-            apy: 70
+            apy: 40
           }));
         }
       }
@@ -288,7 +288,7 @@ const BURRStaking = ({ isConnected, walletAddress, burrBalance }) => {
               padding: '16px',
               border: '1px solid #ff6b35'
             }}>
-              <div style={{ color: 'white', fontSize: '0.85rem', marginBottom: '6px' }}>Current APY</div>
+              <div style={{ color: 'white', fontSize: '0.85rem', marginBottom: '6px' }}>Current APR</div>
               <div style={{ color: 'white', fontSize: '1.4rem', fontWeight: '700' }}>
                 {safeGetValue(stakingData.apy).toFixed(2)}%
               </div>
