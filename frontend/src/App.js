@@ -14,7 +14,6 @@ import {
   fetchBalances,
   fetchPlayerInfo,
   stakeBeaver as stakeStarknetBeaver,
-  claimRewards as claimStarknetRewards,
   upgradeBeaver as upgradeStarknetBeaver,
   getConnection,
   fetchPendingRewards
@@ -780,56 +779,6 @@ function App() {
     }
   };
 
-  const claimRewards = async () => {
-    if (!hasStaked) {
-      showToast.warning('No beaver staked yet!', 4000);
-      return;
-    }
-
-    const totalClaimable = realTimePendingRewardsRaw;
-    if (totalClaimable <= 0) {
-              showToast.info('No rewards to claim yet!', 4000);
-      return;
-    }
-    setIsLoading(true);
-    setLoadingText('Claiming rewards...');
-
-    try {
-      await claimStarknetRewards();
-      setLoadingText('Transaction confirmed! Refreshing data...');
-      setLocalBurrEarned(0);
-      setLastMiningUpdate(Date.now());
-      await refreshData();
-      setIsLoading(false);
-      setLoadingText('');
-              showToast.success(`Successfully claimed ${formatNumber(totalClaimable)} $BURR!`, 5000);
-    } catch (error) {
-      console.error('❌ Claim failed:', error);
-      
-      // Check if this is the mint authorization error
-      if (error.message && error.message.includes('Not authorized to mint')) {
-        setLoadingText('Claim completed (testing mode)...');
-        
-        // Reset local mining earnings after claim
-        setLocalBurrEarned(0);
-        setLastMiningUpdate(Date.now());
-        
-        // Refresh data after mock successful transaction
-        setTimeout(async () => {
-          await refreshData();
-          setIsLoading(false);
-          setLoadingText('');
-          showToast.warning(`Claim processed! (Contract needs funding - ${formatNumber(totalClaimable)} $BURR)`, 7000);
-        }, 2000);
-        
-        return; // Don't show error
-      }
-      
-      setIsLoading(false);
-      setLoadingText('');
-              showToast.error('Claim failed. Please try again.', 5000);
-    }
-  };
 
   const upgradeBeaver = async (beaver) => {
     if (!hasStaked) {
