@@ -10,7 +10,7 @@ deployer.json
 *.p12
 *.pfx
 
-# Deploy scripts with private keys
+# Deploy scripts with private keys 
 deploy_*.js
 simple_deploy.js
 quick_transfer.js
