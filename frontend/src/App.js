@@ -22,7 +22,6 @@ import {
 import ToastContainer, { showToast } from './components/ToastContainer';
 import Header from './components/Header';
 import TokenStats from './components/TokenStats';
-import BURRStaking from './components/BURRStaking';
 // import BeaverMiningAnimation from './components/BeaverMiningAnimation'; // Mining ended!
 import './index.css';
 
@@ -1122,15 +1121,6 @@ function App() {
           </div>
         )}
 
-        {/* BURR Staking Section */}
-        <BURRStaking 
-          wallet={wallet}
-          isConnected={isConnected}
-          walletAddress={walletAddress}
-          burrBalance={burrBalance}
-          burrBalanceRaw={burrBalanceRaw}
-          refreshData={refreshData}
-        />
 
 
 

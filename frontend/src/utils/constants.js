@@ -12,7 +12,6 @@ export const CURRENT_NETWORK = NETWORKS.MAINNET;
 // Contract addresses - Mainnet
 export const MAINNET_ADDRESSES = {
   BURR_TOKEN: "0x01bc7c8ce3b8fe74e4870adc2965df850d429048e83fad93f3140f52ecb74add",
-  BURR_STAKING: "0x0092f792c199b49018656030c48f3338caf54bcf4267987af94dfe85b35604d4", // BURRStaking contract
   GAME_CONTRACT: "0x0138cb7150f311b40163cf4cb4e1be38b795c232ef27c50cdf30b166bec36c27", // New V3 contract
   STRK_TOKEN: "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"
 };
@@ -20,7 +19,6 @@ export const MAINNET_ADDRESSES = {
 // Contract addresses - Sepolia testnet
 export const SEPOLIA_ADDRESSES = {
   BURR_TOKEN: "0x046508bb0159d9815be64d15b88e9051b989355d5a7d1b65f0d7dfabb81b24c0", // Updated BURR Token on Sepolia
-  BURR_STAKING: "0x06a2f6cd6d7eabe791f77b68e027dd1b49b8959728ac8bc966642d0c0ce225dd", // Updated contract with user reward rate fix
   STRK_TOKEN: "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"
 };
 
@@ -31,14 +29,12 @@ const getCurrentAddresses = () => {
 
 export const BURR_TOKEN_ADDRESS = getCurrentAddresses().BURR_TOKEN;
 export const GAME_CONTRACT_ADDRESS = getCurrentAddresses().GAME_CONTRACT || MAINNET_ADDRESSES.GAME_CONTRACT;
-export const BURR_STAKING_ADDRESS = getCurrentAddresses().BURR_STAKING;
 export const STRK_ADDRESSES = [getCurrentAddresses().STRK_TOKEN];
 
 // For legacy support
 export const CONTRACT_ADDRESSES = {
     BURR_TOKEN: BURR_TOKEN_ADDRESS,
     BURROW_GAME: GAME_CONTRACT_ADDRESS,
-    BURR_STAKING: BURR_STAKING_ADDRESS,
     STRK_TOKEN: STRK_ADDRESSES[0]
 };
 
